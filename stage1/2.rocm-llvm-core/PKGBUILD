@@ -27,12 +27,10 @@ prepare() {
     git apply ../loongarch.patch
     git apply ../51e91b64d0deb6a743861c2a0fba84865250036e.patch
 
-    git apply ../51e91b64d0deb6a743861c2a0fba84865250036e.patch
     git apply ../e9d99e51834e2bf0b39c23a60f2dba5539edd17b.patch
     git apply ../78859f118a6b4c7b06c543c7794c59befdc78924.patch
     git apply ../edbe7fa5fef93bb747cb58a589dc25901793774b.patch
     git apply ../06a728f3feab876f9195738b5774e82dadc0f3a7.patch
-  cd ..
   cd ..
   EXT_CFLAGS="-pipe -Wno-missing-template-arg-list-after-template-kw -fPIC -Wno-unused-command-line-argument"
   if [ $CARCH == 'loong64' ];
