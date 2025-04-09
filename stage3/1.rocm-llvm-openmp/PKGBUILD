@@ -21,7 +21,7 @@ prepare() {
   mkdir build || true
   PATH=/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
   ROCM_PATH=/opt/rocm-${pkgver}
-  CFLAGS="-stdlib=libc++  -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include -fPIC"
+  CFLAGS="-Wno-unused-command-line-argument -fPIC"
   if [ $CARCH == 'loong64' ];
   then
     CFLAGS="-mcmodel=extreme $CFLAGS"
@@ -38,7 +38,7 @@ prepare() {
      -DCMAKE_INSTALL_PREFIX="/opt/rocm-${pkgver}/lib/llvm/" \
      -DCMAKE_FIND_ROOT_PATH=/opt/rocm-${pkgver}/  \
      -DOPENMP_ENABLE_LIBOMPTARGET=ON \
-     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+     -DCMAKE_BUILD_TYPE=Release \
      -DSANITIZER_AMDGPU=OFF \
      -DLIBOMP_USE_HWLOC=ON \
      -DLIBOMPTARGET_LLVM_INCLUDE_DIRS=$PWD/../llvm-project/llvm/include \

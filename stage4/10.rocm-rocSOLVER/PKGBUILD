@@ -28,7 +28,7 @@ prepare() {
   else
     targetSet=( )
   fi
-  EXT_CFLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${pkgver}/lib -fPIC -stdlib=libc++ -Wno-gnu-line-marker -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include  -L/opt/rocm-${pkgver}/lib"
+  EXT_CFLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${pkgver}/lib -fPIC -Wno-gnu-line-marker -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include  -L/opt/rocm-${pkgver}/lib"
   cmake ../rocSOLVER \
    -DCMAKE_BUILD_TYPE=Release \
    -DCMAKE_FIND_ROOT_PATH=/opt/rocm-${pkgver}/ \

@@ -25,9 +25,9 @@ prepare() {
   mkdir build || true
   cd build
   sed -i 's!/opt/amdgpu/include!/usr/include!g' ../rocJPEG/cmake/FindLibva.cmake
-  EXT_CFLAGS="-pipe  -fPIC -stdlib=libc++ -Wno-gnu-line-marker -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include"
+  EXT_CFLAGS="-pipe  -fPIC -Wno-gnu-line-marker -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include"
   cmake ../rocJPEG \
-   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+   -DCMAKE_BUILD_TYPE=Release \
    -DCMAKE_FIND_ROOT_PATH="/opt/rocm-${pkgver}/;/usr" \
    -DCMAKE_PREFIX_PATH="/opt/rocm-${pkgver}/;/usr" \
    -DCMAKE_EXE_LINKER_FLAGS="-L/opt/rocm-${pkgver}/lib  -L/opt/rocm-${pkgver}/hip/lib" \

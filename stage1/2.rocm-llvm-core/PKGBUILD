@@ -1,5 +1,5 @@
-pkgbase='rocm-llvm-core'
-pkgname=('rocm-llvm-core')
+pkgbase='rocm-llvm'
+pkgname=('rocm-llvm')
 pkgver=6.3.3
 pkgrel=633000
 pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
@@ -11,19 +11,28 @@ source=(
     "git+https://github.com/ROCm/llvm-project.git#tag=rocm-$pkgver"
     "loongarch.patch"
     "https://github.com/llvm/llvm-project/commit/51e91b64d0deb6a743861c2a0fba84865250036e.patch"
+    # lld 
+    "https://github.com/llvm/llvm-project/commit/e9d99e51834e2bf0b39c23a60f2dba5539edd17b.patch"
+    "https://github.com/llvm/llvm-project/commit/78859f118a6b4c7b06c543c7794c59befdc78924.patch"
+    "https://github.com/llvm/llvm-project/commit/edbe7fa5fef93bb747cb58a589dc25901793774b.patch"
+    "https://github.com/llvm/llvm-project/commit/06a728f3feab876f9195738b5774e82dadc0f3a7.patch"
 )
-b2sums=('SKIP' 'SKIP' 'SKIP')
+b2sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 #prepare() {
 #echo
 #}
-TARGET="AMDGPU;NVPTX;"
-TARGET="$TARGET;LoongArch;"
-TARGET="$TARGET;X86;"
-TARGET="$TARGET;RISCV;"
+TARGET="host;AMDGPU;NVPTX;"
 prepare() {
   cd llvm-project
     git apply ../loongarch.patch
     git apply ../51e91b64d0deb6a743861c2a0fba84865250036e.patch
+
+    git apply ../51e91b64d0deb6a743861c2a0fba84865250036e.patch
+    git apply ../e9d99e51834e2bf0b39c23a60f2dba5539edd17b.patch
+    git apply ../78859f118a6b4c7b06c543c7794c59befdc78924.patch
+    git apply ../edbe7fa5fef93bb747cb58a589dc25901793774b.patch
+    git apply ../06a728f3feab876f9195738b5774e82dadc0f3a7.patch
+  cd ..
   cd ..
   EXT_CFLAGS="-pipe -Wno-missing-template-arg-list-after-template-kw -fPIC -Wno-unused-command-line-argument"
   if [ $CARCH == 'loong64' ];
@@ -31,47 +40,46 @@ prepare() {
     EXT_CFLAGS="-mcmodel=extreme $EXT_CFLAGS"
   fi
 
-  mkdir runtimes-build || true
-  cd runtimes-build
-      cmake \
-    -DCMAKE_C_COMPILER=clang \
-    -DCMAKE_CXX_COMPILER=clang++ \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DCMAKE_C_FLAGS="$EXT_CFLAGS" \
-    -DCMAKE_CXX_FLAGS="$EXT_CFLAGS" \
-    -DCMAKE_INSTALL_PREFIX="$PWD/../runtimes" \
-    -DLLVM_ENABLE_ASSERTIONS=1 \
-    -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind" \
-    -DCMAKE_INSTALL_RPATH="/opt/rocm-${pkgver}/lib/llvm/lib;$PWD/../runtimes/lib" \
-    -DCMAKE_BUILD_RPATH="/opt/rocm-${pkgver}/lib/llvm/lib;$PWD/../runtimes/lib" \
-    -DBUILD_SHARED_LIBS=ON \
-    -DLLVM_ENABLE_LIBCXX=ON \
-    -DLIBCXX_ENABLE_SHARED=ON \
-    -DLIBCXX_ENABLE_STATIC=ON \
-    -DLIBCXXABI_ENABLE_SHARED=ON \
-    -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
-    -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
-    -DRUNTIMES_CMAKE_ARGS="-DCMAKE_C_COMPILER=clang;-DCMAKE_CXX_COMPILER=clang++;-DCMAKE_INSTALL_RPATH='$PWD/../runtimes/lib';-DCMAKE_BUILD_RPATH='$PWD/../runtimes/lib';-DBUILD_RPATH_USE_ORIGIN=OFF;-DLLVM_ENABLE_PIC=ON" \
-    -G "Ninja" \
-    -DLLVM_ENABLE_PIC=ON \
-    -S ../llvm-project/llvm/
-    ninja runtimes install-runtimes
-  cd ..
+#  mkdir runtimes-build || true
+#  cd runtimes-build
+#      cmake \
+#    -DCMAKE_C_COMPILER=clang \
+#    -DCMAKE_CXX_COMPILER=clang++ \
+#    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+#    -DCMAKE_C_FLAGS="$EXT_CFLAGS" \
+#    -DCMAKE_CXX_FLAGS="$EXT_CFLAGS" \
+#    -DCMAKE_INSTALL_PREFIX="$PWD/../runtimes" \
+#    -DLLVM_ENABLE_ASSERTIONS=1 \
+#    -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind" \
+#    -DLLVM_TARGETS_TO_BUILD="host" \
+#    -DCMAKE_INSTALL_RPATH="/opt/rocm-${pkgver}/lib/llvm/lib;$PWD/../runtimes/lib" \
+#    -DCMAKE_BUILD_RPATH="/opt/rocm-${pkgver}/lib/llvm/lib;$PWD/../runtimes/lib" \
+#    -DBUILD_SHARED_LIBS=ON \
+#    -DLLVM_ENABLE_LIBCXX=ON \
+#    -DLIBCXX_ENABLE_SHARED=ON \
+#    -DLIBCXX_ENABLE_STATIC=ON \
+#    -DLIBCXXABI_ENABLE_SHARED=ON \
+#    -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
+#    -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
+#    -DRUNTIMES_CMAKE_ARGS="-DCMAKE_C_COMPILER=clang;-DCMAKE_CXX_COMPILER=clang++;-DCMAKE_INSTALL_RPATH='$PWD/../runtimes/lib';-DCMAKE_BUILD_RPATH='$PWD/../runtimes/lib';-DBUILD_RPATH_USE_ORIGIN=OFF;-DLLVM_ENABLE_PIC=ON" \
+#    -G "Ninja" \
+#    -DLLVM_ENABLE_PIC=ON \
+#    -S ../llvm-project/llvm/
+#    ninja runtimes install-runtimes
+#  cd ..
   mkdir build || true
   cd build
-  EXT_CFLAGS="-stdlib=libc++ -L$PWD/../runtimes/lib -I$PWD/../runtimes/include/c++/v1 $EXT_CFLAGS"
+#  EXT_CFLAGS="-stdlib=libc++ -L$PWD/../runtimes/lib -I$PWD/../runtimes/include/c++/v1 $EXT_CFLAGS"
   cmake \
-  -DCMAKE_C_COMPILER=clang \
-  -DCMAKE_CXX_COMPILER=clang++ \
-  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_C_FLAGS="$EXT_CFLAGS" \
   -DCMAKE_CXX_FLAGS="$EXT_CFLAGS" \
   -DCMAKE_INSTALL_PREFIX="/opt/rocm-${pkgver}/lib/llvm" \
   -DLLVM_ENABLE_ASSERTIONS=1 \
   -DLLVM_TARGETS_TO_BUILD="$TARGET" \
+  -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt;clang-tools-extra;mlir" \
   -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind" \
   -DCMAKE_INSTALL_RPATH="/opt/rocm-${pkgver}/lib/llvm/lib" \
-  -DCMAKE_BUILD_RPATH="/opt/rocm-${pkgver}/lib/llvm/lib" \
   -DBUILD_SHARED_LIBS=ON \
   -DLLVM_ENABLE_LIBCXX=ON \
   -DLIBCXX_ENABLE_SHARED=ON \
@@ -90,7 +98,7 @@ prepare() {
 }
 build() {
   cd build
-  LD_LIBRARY_PATH=$PWD/../runtimes/lib:$LD_LIBRARY_PATH CC=clang CXX=clang++  cmake --build .
+  cmake --build .
 }
 
 check() {

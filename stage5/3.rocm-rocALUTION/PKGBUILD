@@ -23,9 +23,9 @@ prepare() {
   else
     targetSet=( )
   fi
-  EXT_CFLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${pkgver}/lib -fPIC -stdlib=libc++ -Wno-gnu-line-marker -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include  -L/opt/rocm-${pkgver}/lib -fexperimental-library"
+  EXT_CFLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${pkgver}/lib -fPIC -Wno-gnu-line-marker -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include  -L/opt/rocm-${pkgver}/lib"
   cmake ../rocALUTION \
-   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+   -DCMAKE_BUILD_TYPE=Release \
    -DCMAKE_FIND_ROOT_PATH=/opt/rocm-${pkgver}/ \
    -DCMAKE_PREFIX_PATH="/opt/rocm-${pkgver}/hip/cmake/;/opt/rocm-${pkgver}/lib64/cmake/hip;/opt/rocm-${pkgver}/;/usr" \
    -DCMAKE_INSTALL_PREFIX=/opt/rocm-${pkgver} \

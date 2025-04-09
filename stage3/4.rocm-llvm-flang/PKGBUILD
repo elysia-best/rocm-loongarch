@@ -22,7 +22,7 @@ prepare() {
   PATH=/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
   ROCM_PATH=/opt/rocm-${pkgver}
   cd build
-  EXT_CFLAGS="-pipe  -fPIC -stdlib=libc++ -Wno-gnu-line-marker -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include"
+  EXT_CFLAGS="-fPIC -Wno-gnu-line-marker -Wno-unused-command-line-argument"
     cmake $PWD/../llvm-project/flang/ -G Ninja \
      -DCMAKE_BUILD_RPATH="/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib" \
      -DCMAKE_INSTALL_RPATH="/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib" \
@@ -33,7 +33,7 @@ prepare() {
      -DCMAKE_INSTALL_PREFIX="/opt/rocm-${pkgver}/lib/llvm/" \
      -DCMAKE_LINKER_TYPE=LLD \
      -DCMAKE_FIND_ROOT_PATH=/opt/rocm-${pkgver}/  \
-     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+     -DCMAKE_BUILD_TYPE=Release \
      -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
      -DLLVM_MAIN_INCLUDE_DIR=$PWD/../llvm-project/llvm/include \
      -DLLVM_DIR=$PWD/../llvm-project \

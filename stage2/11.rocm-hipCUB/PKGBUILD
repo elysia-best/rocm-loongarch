@@ -18,9 +18,9 @@ prepare() {
 #  sed -i '32i find_package( HIP CONFIG REQUIRED )' hipCUB/test/CMakeLists.txt
   mkdir build || true
   cd build
-  CFLAGS="-stdlib=libc++  -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include"
+  CFLAGS="-Wno-unused-command-line-argument "
   cmake ../hipCUB \
-   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+   -DCMAKE_BUILD_TYPE=Release \
    -DCMAKE_FIND_ROOT_PATH=/opt/rocm-${pkgver}/ \
    -DAMDGPU_TARGETS=$AMDGPU_TARGETS \
    -DCMAKE_PREFIX_PATH="/opt/rocm-${pkgver}/;/usr" \

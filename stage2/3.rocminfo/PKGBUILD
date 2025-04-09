@@ -11,16 +11,16 @@ source=(
     "git+https://github.com/ROCm/rocminfo.git"
 )
 b2sums=('SKIP')
-depends=("rocm-llvm-extra=${pkgver}" "rocm-rocr-runtime=${pkgver}")
+depends=("rocm-llvm=${pkgver}" "rocm-rocr-runtime=${pkgver}")
 
 PATH=/opt/rocm-${pkgver}/bin:/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
 
 prepare() {
   mkdir build || true
   cd build
-  CFLAGS="-stdlib=libc++  -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument"
+  CFLAGS="-Wno-unused-command-line-argument"
   cmake "../rocminfo" \
-  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCMAKE_BUILD_TYPE=Release \
    -DCMAKE_C_COMPILER=/opt/rocm-${pkgver}/lib/llvm/bin/clang \
    -DCMAKE_CXX_COMPILER=/opt/rocm-${pkgver}/lib/llvm/bin/clang++ \
    -DCMAKE_INSTALL_RPATH="/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib" \

@@ -17,7 +17,7 @@ depends=("rocm-clr=${pkgver}")
 export PATH=/opt/rocm-${pkgver}/bin:/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
 export ROCM_HOME=/opt/rocm-$pkgver/
 export HIPDIR=$ROCM_HOME/hip
-export EXT_CFLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${pkgver}/lib -Wl,-rpath=/opt/rocm-${pkgver}/lib/llvm/lib -fPIC -stdlib=libc++ -Wno-gnu-line-marker -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include -I/opt/rocm-${pkgver}/include/hipblas/ -I/opt/rocm-${pkgver}/include/hipsparse  -L/opt/rocm-${pkgver}/lib -fexperimental-library"
+export EXT_CFLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${pkgver}/lib -Wl,-rpath=/opt/rocm-${pkgver}/lib/llvm/lib -fPIC  -Wno-gnu-line-marker  -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include -I/opt/rocm-${pkgver}/include/hipblas/ -I/opt/rocm-${pkgver}/include/hipsparse  -L/opt/rocm-${pkgver}/lib"
 if [ $CARCH == 'loong64' ];
 then
   EXT_CFLAGS="-mcmodel=extreme $EXT_CFLAGS"

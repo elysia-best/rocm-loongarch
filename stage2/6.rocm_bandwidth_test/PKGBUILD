@@ -21,10 +21,10 @@ prepare() {
 #  sed -i '32i find_package( HIP CONFIG REQUIRED )' rocm_bandwidth_test/test/CMakeLists.txt
   mkdir build || true
   cd build
-  CFLAGS="-stdlib=libc++  -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument"
+  CFLAGS="-Wno-unused-command-line-argument"
   cmake ../rocm_bandwidth_test \
    -DCMAKE_C_COMPILER=/opt/rocm-${pkgver}/lib/llvm/bin/clang \
-   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+   -DCMAKE_BUILD_TYPE=Release \
    -DCMAKE_FIND_ROOT_PATH=/opt/rocm-${pkgver}/ \
    -DCMAKE_CXX_COMPILER=/opt/rocm-${pkgver}/lib/llvm/bin/clang++ \
    -DCMAKE_CXX_FLAGS="$CFLAGS -I/opt/rocm-${pkgver}/include/hsa" \

@@ -14,7 +14,7 @@ function prepare() {
   else
     targetSet=( )
   fi
-  EXT_CFLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${pkgver}/lib -Wl,-rpath=/opt/rocm-${pkgver}/lib/llvm/lib -fPIC -stdlib=libc++ -Wno-gnu-line-marker -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include  -L/opt/rocm-${pkgver}/lib -fexperimental-library"
+  EXT_CFLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${pkgver}/lib -Wl,-rpath=/opt/rocm-${pkgver}/lib/llvm/lib -fPIC -Wno-gnu-line-marker -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include  -L/opt/rocm-${pkgver}/lib"
   _ARCH=$(/opt/rocm-$pkgver/lib/llvm/bin/clang $EXT_FLAGS --version | grep Target|awk '{print $2}'|awk -F - '{print $1}')
   if [ $_ARCH == 'loongarch64' ];
   then

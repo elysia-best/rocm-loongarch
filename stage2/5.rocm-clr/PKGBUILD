@@ -15,7 +15,7 @@ source=(
 )
 b2sums=('SKIP' 'SKIP' 'SKIP' 'SKIP')
 PATH=/opt/rocm-${pkgver}/bin:/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
-depends=("rocm-llvm-extra=${pkgver}"
+depends=("rocm-llvm=${pkgver}"
 "rocm-cmake=${pkgver}"
 "rocm-rocr-runtime=${pkgver}"
 )
@@ -35,14 +35,14 @@ prepare() {
 
   mkdir build || true
   cd build
-  CFLAGS="-stdlib=libc++  -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument"
+  CFLAGS="-Wno-unused-command-line-argument"
 
   cmake ../clr/ \
    -DHIP_COMMON_DIR=$PWD/../HIP/ \
    -DHIPCC_BIN_DIR=/opt/rocm-${pkgver}/bin/ \
    -DHIP_PLATFORM=amd \
    -DCLR_BUILD_HIP=ON \
-   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+   -DCMAKE_BUILD_TYPE=Release \
    -DCLR_BUILD_OCL=ON \
    -DBUILD_ICD=ON \
    -DROCM_PATH=/opt/rocm-${pkgver}/ \

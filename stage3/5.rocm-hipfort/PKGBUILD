@@ -24,9 +24,9 @@ prepare() {
 #  sed -i '32i find_package( HIP CONFIG REQUIRED )' hipfort/test/CMakeLists.txt
   mkdir build || true
   cd build
-  EXT_CFLAGS="-pipe  -fPIC -stdlib=libc++ -Wno-gnu-line-marker -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include"
+  EXT_CFLAGS="-pipe -fPIC -Wno-gnu-line-marker -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include"
   cmake ../hipfort \
-   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+   -DCMAKE_BUILD_TYPE=Release \
    -DHIPFORT_COMPILER=/opt/rocm-${pkgver}/lib/llvm/bin/flang \
    -DHIPFORT_COMPILER_FLAGS="-ffree-form -cpp" \
    -DHIPFORT_AR=/opt/rocm-${pkgver}/lib/llvm/bin/llvm-ar \
