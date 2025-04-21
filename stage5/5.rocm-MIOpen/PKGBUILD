@@ -22,7 +22,7 @@ PATH=/opt/rocm-${pkgver}/bin:$PATH
 # If MIOpen use CK
 # then set AMDGPU_TARGETS
 #  is not useful
-unset AMDGPU_TARGETS
+# unset AMDGPU_TARGETS
 
 prepare() {
 #git lfs fetch -a
@@ -33,14 +33,14 @@ prepare() {
   cd ..
   mkdir build || true
   cd build
-  EXT_CFLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${pkgver}/lib -Wl,-rpath=/opt/rocm-${pkgver}/lib/llvm/lib -fPIC -stdlib=libc++ -Wno-gnu-line-marker -L/opt/rocm-${pkgver}/lib/llvm/lib -I/opt/rocm-${pkgver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include  -L/opt/rocm-${pkgver}/lib -fexperimental-library"
+  EXT_CFLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${pkgver}/lib -Wl,-rpath=/opt/rocm-${pkgver}/lib/llvm/lib -fPIC -Wno-gnu-line-marker -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include  -L/opt/rocm-${pkgver}/lib "
   if [ $CARCH == 'loong64' ];
   then
     EXT_CFLAGS="-mcmodel=extreme $EXT_CFLAGS"
   fi
   cmake ../MIOpen \
    -DMIOPEN_BACKEND=HIP \
-   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+   -DCMAKE_BUILD_TYPE=Release \
    -DCMAKE_C_COMPILER=/opt/rocm-${pkgver}/lib/llvm/bin/clang \
    -DMIOPEN_HIP_COMPILER=/opt/rocm-${pkgver}/lib/llvm/bin/clang++ \
    -DCMAKE_FIND_ROOT_PATH=/opt/rocm-${pkgver}/ \
@@ -55,7 +55,7 @@ prepare() {
    -DMIOPEN_BUILD_DRIVER=ON \
    -DBoost_USE_STATIC_LIBS=OFF \
    -DBUILD_TESTING=OFF \
-   -DMIOPEN_USE_COMPOSABLEKERNEL=ON \
+   -DMIOPEN_USE_COMPOSABLEKERNEL=OFF \
    -DCMAKE_SHARED_LINKER_FLAGS="-L/opt/rocm-${pkgver}/lib64" \
    -DCMAKE_INSTALL_RPATH="/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib/llvm/lib;/opt/rocm-${pkgver}/lib64" \
    -DCMAKE_BUILD_RPATH="/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib/llvm/lib;/opt/rocm-${pkgver}/lib64" \

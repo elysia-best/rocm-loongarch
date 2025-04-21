@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 7b9e081c8d..818b4751e4 100644
+index 7b9e081c8d..bbf8883e84 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -149,10 +149,10 @@ else()
@@ -17,6 +17,32 @@ index 7b9e081c8d..818b4751e4 100644
  
  list(APPEND CMAKE_PREFIX_PATH ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_PREFIX}/llvm ${CMAKE_INSTALL_PREFIX}/hip /opt/rocm /opt/rocm/llvm /opt/rocm/hip)
  
+@@ -363,16 +363,16 @@ if( MIOPEN_BACKEND STREQUAL "HIP" OR MIOPEN_BACKEND STREQUAL "HIPOC" OR MIOPEN_B
+     endif()
+ 
+     # hipblaslt
+-    set_var_to_condition(MIOPEN_USE_HIPBLASLT_DEFAULT NOT WIN32)
+-    option(MIOPEN_USE_HIPBLASLT "Use hipBlasLt" ${MIOPEN_USE_HIPBLASLT_DEFAULT})
+-    if(MIOPEN_USE_HIPBLASLT)
+-        find_package(hipblas REQUIRED PATHS /opt/rocm $ENV{HIP_PATH})
+-        message(STATUS "Build with hipbBLAS ${hipblas_VERSION} ${hipblas_DIR}")
+-        find_package(hipblaslt REQUIRED PATHS /opt/rocm $ENV{HIP_PATH})
+-        message(STATUS "Build with hipbBLASLt ${hipblaslt_VERSION} ${hipblaslt_DIR}")
+-    else()
++#    set_var_to_condition(MIOPEN_USE_HIPBLASLT_DEFAULT NOT WIN32)
++#    option(MIOPEN_USE_HIPBLASLT "Use hipBlasLt" ${MIOPEN_USE_HIPBLASLT_DEFAULT})
++#    if(MIOPEN_USE_HIPBLASLT)
++#        find_package(hipblas REQUIRED PATHS /opt/rocm $ENV{HIP_PATH})
++#        message(STATUS "Build with hipbBLAS ${hipblas_VERSION} ${hipblas_DIR}")
++#        find_package(hipblaslt REQUIRED PATHS /opt/rocm $ENV{HIP_PATH})
++#        message(STATUS "Build with hipbBLASLt ${hipblaslt_VERSION} ${hipblaslt_DIR}")
++#    else()
+         message(STATUS "Build without hipbBLASLt")
+-    endif()
++#    endif()
+ else()
+     #CK is only enabled when HIP backend is selected   
+     set(MIOPEN_USE_COMPOSABLEKERNEL Off)
 @@ -692,7 +692,7 @@ rocm_create_package(
      # DEPENDS rocm-opencl hip-rocclr tinygemm
  )

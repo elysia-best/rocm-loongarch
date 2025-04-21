@@ -1,7 +1,7 @@
 pkgbase='rocm-clr'
 pkgname=('rocm-clr')
-pkgver=6.3.3
-pkgrel=633000
+pkgver=6.4.0
+pkgrel=640000
 pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
 arch=('loong64' 'x86_64' 'riscv64')
 license=('MIT')
@@ -12,8 +12,9 @@ source=(
     "git+https://github.com/ROCm/clr.git#tag=rocm-$pkgver"
     "clr.patch"
     "clr-riscv.patch"
+    "hip.patch"
 )
-b2sums=('SKIP' 'SKIP' 'SKIP' 'SKIP')
+b2sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 PATH=/opt/rocm-${pkgver}/bin:/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
 depends=("rocm-llvm=${pkgver}"
 "rocm-cmake=${pkgver}"
@@ -32,31 +33,33 @@ prepare() {
       git apply ../clr-riscv.patch
     fi
   cd ..
-
+  cd HIP
+    git apply ../hip.patch
+  cd ..
+  CFLAGS=""
+  cat  > toolchain.cmake << EOF
+set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_C_FLAGS "$CFLAGS")
+set(CMAKE_CXX_FLAGS "$CFLAGS")
+set(CMAKE_BUILD_RPATH "/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib")
+set(CMAKE_INSTALL_RPATH "/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib")
+set(CMAKE_FIND_ROOT_PATH "/opt/rocm-${pkgver}/")
+set(CMAKE_C_COMPILER "/opt/rocm-${pkgver}/lib/llvm/bin/clang")
+set(CMAKE_CXX_COMPILER "/opt/rocm-${pkgver}/lib/llvm/bin/clang++")
+EOF
   mkdir build || true
   cd build
-  CFLAGS="-Wno-unused-command-line-argument"
-
   cmake ../clr/ \
+   -DCMAKE_TOOLCHAIN_FILE=$PWD/../toolchain.cmake \
    -DHIP_COMMON_DIR=$PWD/../HIP/ \
    -DHIPCC_BIN_DIR=/opt/rocm-${pkgver}/bin/ \
    -DHIP_PLATFORM=amd \
    -DCLR_BUILD_HIP=ON \
-   -DCMAKE_BUILD_TYPE=Release \
    -DCLR_BUILD_OCL=ON \
    -DBUILD_ICD=ON \
    -DROCM_PATH=/opt/rocm-${pkgver}/ \
-   -DCMAKE_C_COMPILER=/opt/rocm-${pkgver}/lib/llvm/bin/clang \
-   -DCMAKE_CXX_COMPILER=/opt/rocm-${pkgver}/lib/llvm/bin/clang++ \
-   -DCMAKE_INSTALL_RPATH="/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib" \
-   -DCMAKE_CXX_FLAGS="$CFLAGS" \
-   -DCMAKE_C_FLAGS="$CFLAGS" \
-   -DCMAKE_FIND_ROOT_PATH=/opt/rocm-${pkgver}/ \
-   -DCMAKE_PREFIX_PATH="/opt/rocm-${pkgver}/;/usr" \
    -DCMAKE_INSTALL_PREFIX="/opt/rocm-${pkgver}" \
-   -DCMAKE_EXE_LINKER_FLAGS="-L/opt/rocm-${pkgver}/lib" \
    -DHIP_ENABLE_ROCPROFILER_REGISTER=OFF \
-   -DCMAKE_LINKER_TYPE=LLD \
    -DAMD_ICD_LIBRARY=$PWD/opencl/khronos/icd/libOpenCL.so \
    -G "Unix Makefiles"
   sed -i 's!.bat!!g' hipamd/cmake_install.cmake

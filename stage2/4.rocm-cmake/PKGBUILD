@@ -1,7 +1,7 @@
 pkgbase='rocm-cmake'
 pkgname=('rocm-cmake')
-pkgver=6.3.3
-pkgrel=633000
+pkgver=6.4.0
+pkgrel=640000
 pkgdesc="CMake modules used within the ROCm libraries"
 arch=('loong64' 'x86_64')
 license=('MIT')
@@ -14,8 +14,8 @@ b2sums=('SKIP')
 prepare() {
   mkdir build || true
   cd build
-  cmake "../${pkgbase}" \
-  "-DCMAKE_INSTALL_PREFIX=/opt/rocm-${pkgver}" \
+  cmake "../$pkgbase" \
+  -DCMAKE_INSTALL_PREFIX=/opt/rocm-$pkgver \
   -G 'Unix Makefiles'
 }
 build() {

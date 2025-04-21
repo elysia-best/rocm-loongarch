@@ -1,8 +1,21 @@
+diff --git a/runtime/hsa-runtime/core/inc/amd_elf_image.hpp b/runtime/hsa-runtime/core/inc/amd_elf_image.hpp
+index 177465c0..1d0166e6 100644
+--- a/runtime/hsa-runtime/core/inc/amd_elf_image.hpp
++++ b/runtime/hsa-runtime/core/inc/amd_elf_image.hpp
+@@ -47,7 +47,7 @@
+ #include <sstream>
+ #include <vector>
+ #include <memory>
+-
++#include <cstdint>
+ namespace rocr {
+ namespace amd {
+ namespace elf {
 diff --git a/runtime/hsa-runtime/core/runtime/amd_aql_queue.cpp b/runtime/hsa-runtime/core/runtime/amd_aql_queue.cpp
-index f6a08c33..e992205c 100644
+index 47a6f387..3485d896 100644
 --- a/runtime/hsa-runtime/core/runtime/amd_aql_queue.cpp
 +++ b/runtime/hsa-runtime/core/runtime/amd_aql_queue.cpp
-@@ -1551,7 +1551,13 @@ void AqlQueue::ExecutePM4(uint32_t* cmd_data, size_t cmd_size_b, hsa_fence_scope
+@@ -1666,7 +1666,13 @@ void AqlQueue::ExecutePM4(uint32_t* cmd_data, size_t cmd_size_b, hsa_fence_scope
    memcpy(&queue_slot[1], &slot_data[1], slot_size_b - sizeof(uint32_t));
    if (core::Runtime::runtime_singleton_->flag().dev_mem_queue() && !agent_->is_xgmi_cpu_gpu()) {
      // Ensure the packet body is written as header may get reordered when writing over PCIE
@@ -82,7 +95,7 @@ index a86dabb3..16db6df2 100644
      // Invalidate consumed packet.
      atomic::Store(&ring[i & mask].packet.header, kInvalidHeader, std::memory_order_release);
 diff --git a/runtime/hsa-runtime/core/util/lnx/os_linux.cpp b/runtime/hsa-runtime/core/util/lnx/os_linux.cpp
-index 0cc65b1c..e6c55dd1 100644
+index 4d629798..efb0fc73 100644
 --- a/runtime/hsa-runtime/core/util/lnx/os_linux.cpp
 +++ b/runtime/hsa-runtime/core/util/lnx/os_linux.cpp
 @@ -65,7 +65,7 @@
@@ -110,3 +123,37 @@ index 6c0de49a..052d04ac 100644
        } else if (cnt-- > maxSpinIterYield) {
          os::YieldThread();
        } else {
+diff --git a/runtime/hsa-runtime/core/util/utils.h b/runtime/hsa-runtime/core/util/utils.h
+index 66c2028a..00f2d123 100644
+--- a/runtime/hsa-runtime/core/util/utils.h
++++ b/runtime/hsa-runtime/core/util/utils.h
+@@ -354,6 +354,7 @@ static __forceinline std::string& trim(std::string& s) { return ltrim(rtrim(s));
+ /// @param: offset(Input), offset of base address to flush
+ /// @param: len(Input), length of buffer to flush
+ inline void FlushCpuCache(const void* base, size_t offset, size_t len) {
++#if defined(__x86_64__)
+   static long cacheline_size = 0;
+ 
+   if (!cacheline_size) {
+@@ -369,6 +370,7 @@ inline void FlushCpuCache(const void* base, size_t offset, size_t len) {
+     _mm_clflush((const void*)cur);
+     cur += cacheline_size;
+   } while (cur <= (const char*)lastline);
++#endif
+ }
+ 
+ }  // namespace rocr
+diff --git a/runtime/hsa-runtime/image/util.h b/runtime/hsa-runtime/image/util.h
+index 88cdf4cc..4db31e7b 100644
+--- a/runtime/hsa-runtime/image/util.h
++++ b/runtime/hsa-runtime/image/util.h
+@@ -74,8 +74,8 @@ namespace image {
+ 
+ 
+ #if defined(__GNUC__)
+-#include "mm_malloc.h"
+ #if defined(__i386__) || defined(__x86_64__)
++#include "mm_malloc.h"
+ #include <x86intrin.h>
+ #elif defined(__loongarch64)
+ #else
