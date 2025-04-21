@@ -1,0 +1,89 @@
+pkgbase='rocm-llvm-extra'
+pkgname=('rocm-llvm-extra')
+pkgver=6.4.0
+pkgrel=640000
+pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
+arch=('loong64' 'x86_64' 'riscv64')
+license=('Apache')
+url="https://github.com/ROCm/llvm-project"
+provides=('rocm-llvm-core')
+source=(
+    "git+https://github.com/ROCm/llvm-project.git#tag=rocm-$pkgver"
+)
+b2sums=('SKIP')
+prepare() {
+  mkdir build || true
+  PATH=/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
+  ROCM_PATH=/opt/rocm-${pkgver}
+  CXXFLAGS=""
+  cat  > toolchain.cmake << EOF
+set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_C_FLAGS "$CXXFLAGS")
+set(CMAKE_CXX_FLAGS "$CXXFLAGS")
+set(CMAKE_BUILD_RPATH "/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib")
+set(CMAKE_INSTALL_RPATH "/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib")
+EOF
+  cd build
+    mkdir device-libs || true
+    cd device-libs
+      cmake $PWD/../../llvm-project/amd/device-libs/ \
+       -G Ninja \
+       -DCMAKE_TOOLCHAIN_FILE=$PWD/../../toolchain.cmake \
+       -DCMAKE_INSTALL_PREFIX=/opt/rocm-${pkgver}/
+    cd ..
+    mkdir comgr || true
+    cd comgr
+      cmake $PWD/../../llvm-project/amd/comgr/ \
+       -G Ninja \
+       -DAMDDeviceLibs_DIR=$PWD/../device-libs/lib64/cmake/AMDDeviceLibs/ \
+       -DBUILD_TESTING=OFF \
+       -DCMAKE_TOOLCHAIN_FILE=$PWD/../../toolchain.cmake \
+       -DCMAKE_INSTALL_PREFIX=/opt/rocm-${pkgver}/ 
+    cd ..
+    mkdir hipcc || true
+    cd hipcc
+      cmake $PWD/../../llvm-project/amd/hipcc/ \
+       -G Ninja \
+       -DCMAKE_TOOLCHAIN_FILE=$PWD/../../toolchain.cmake \
+       -DCMAKE_INSTALL_PREFIX=/opt/rocm-${pkgver}/ 
+    cd ..
+  cd ..
+
+}
+build() {
+  cd build
+    cd device-libs
+      ninja
+    cd ..
+    cd comgr
+      ninja
+    cd ..
+    cd hipcc
+      ninja
+    cd ..
+  cd ..
+}
+
+check() {
+#  cd build
+#  ninja check
+echo
+}
+
+#packaging() {
+
+#}
+package() {
+  cd build
+    cd device-libs
+      cmake --install . --prefix "$pkgdir"/opt/rocm-${pkgver}
+    cd ..
+    cd comgr
+      cmake --install . --prefix "$pkgdir"/opt/rocm-${pkgver}
+    cd ..
+    cd hipcc
+      cmake --install . --prefix "$pkgdir"/opt/rocm-${pkgver}
+    cd ..
+  cd ..
+}
+

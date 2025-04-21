@@ -1,0 +1,74 @@
+pkgbase='rocm-roctracer'
+pkgname=('rocm-roctracer')
+pkgver=6.4.0
+pkgrel=640000
+pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
+arch=('loong64' 'x86_64' 'riscv64')
+license=('MIT')
+url="https://github.com/ROCm/ROCT-Thunk-Interface.git"
+
+source=(
+    "git+https://github.com/ROCm/roctracer.git#tag=rocm-$pkgver"
+    "roctracer.patch"
+)
+b2sums=('SKIP' 'SKIP')
+depends=("rocm-clr=${pkgver}")
+PATH=/opt/rocm-${pkgver}/bin:/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
+prepare() {
+#  sed -i '32d' roctracer/test/CMakeLists.txt
+#  sed -i '32i find_package( HIP CONFIG REQUIRED )' roctracer/test/CMakeLists.txt
+  cd roctracer
+    git apply ../roctracer.patch
+  cd ..
+  if [ -n $AMDGPU_TARGETS ] && [ $AMDGPU_TARGETS != 'all' ]; then 
+    targetSet=( -DAMDGPU_TARGETS=$AMDGPU_TARGETS )
+  else
+    targetSet=( )
+  fi
+  CFLAGS="-pipe  -fPIC"
+  cat  > toolchain.cmake << EOF
+set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_C_FLAGS "$CFLAGS")
+set(CMAKE_CXX_FLAGS "$CFLAGS")
+set(CMAKE_BUILD_RPATH "/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib")
+set(CMAKE_INSTALL_RPATH "/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib")
+set(CMAKE_FIND_ROOT_PATH "/opt/rocm-${pkgver}/")
+set(CMAKE_C_COMPILER "/opt/rocm-${pkgver}/lib/llvm/bin/amdclang")
+set(CMAKE_CXX_COMPILER "/opt/rocm-${pkgver}/lib/llvm/bin/amdclang++")
+set(CMAKE_SHARED_LINKER_FLAGS "-L/opt/rocm-${pkgver}/lib64")
+set(CMAKE_EXE_LINKER_FLAGS "-L/opt/rocm-${pkgver}/lib64")
+list(APPEND CMAKE_MODULE_PATH "/opt/rocm-${pkgver}/lib64/cmake/hip/")
+include_directories("/opt/rocm-${pkgver}/include")
+EOF
+
+  mkdir build || true
+  cd build
+  cmake ../roctracer \
+   -DCMAKE_BUILD_TYPE=Release \
+   -DCMAKE_INSTALL_PREFIX=/opt/rocm-${pkgver} \
+   -DCMAKE_TOOLCHAIN_FILE=$PWD/../toolchain.cmake \
+   ${targetSet[@]} \
+  -G "Unix Makefiles"
+  #sed -i '3921,d' build/hipify/src/device/device_table.h
+
+}
+build() {
+  mkdir build || true
+  cd build
+  make -j$(nproc)
+}
+
+check() {
+#  cd "ROCm-CompilerSupport"
+#  cd build
+#  make ctest
+echo
+}
+
+#packaging() {
+
+#}
+package() {
+  cd build
+  make DESTDIR="$pkgdir/" install
+}

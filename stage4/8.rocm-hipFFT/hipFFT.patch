@@ -1,0 +1,14 @@
+diff --git a/shared/hipfft_brick.h b/shared/hipfft_brick.h
+index f7e0fad..8d81c84 100644
+--- a/shared/hipfft_brick.h
++++ b/shared/hipfft_brick.h
+@@ -20,6 +20,9 @@
+ 
+ #ifndef HIPFFT_BRICK_H
+ #define HIPFFT_BRICK_H
++#ifndef __glibcxx_assert
++#define __glibcxx_assert(_Condition)
++#endif
+ 
+ #include "ptrdiff.h"
+ 

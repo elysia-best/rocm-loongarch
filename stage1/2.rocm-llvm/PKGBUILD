@@ -1,0 +1,73 @@
+pkgbase='rocm-llvm'
+pkgname=('rocm-llvm')
+pkgver=6.4.0
+pkgrel=640000
+pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
+arch=('loong64' 'x86_64' 'riscv64')
+license=('Apache')
+url="https://github.com/ROCm/llvm-project"
+provides=('rocm-compilersupport' 'rocm-device-libs')
+source=(
+    "git+https://github.com/ROCm/llvm-project.git#tag=rocm-$pkgver"
+    "loongarch.patch"
+)
+b2sums=('SKIP' 'SKIP')
+prepare() {
+  cd llvm-project
+    git apply ../loongarch.patch
+  cd ..
+  EXT_CFLAGS="-pipe -fPIC "
+# if use clang19 build
+# add -Wno-missing-template-arg-list-after-template-kw
+# if CMAKE_C_COMPILER!=clang
+#   do not enable flang
+  if [ $CARCH == 'loong64' ];
+  then
+    EXT_CFLAGS="-mcmodel=extreme $EXT_CFLAGS"
+  fi
+  cat  > toolchain.cmake << EOF
+set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_INSTALL_PREFIX "/opt/rocm-${pkgver}/lib/llvm")
+set(CMAKE_INSTALL_RPATH "/opt/rocm-${pkgver}/lib/llvm/lib")
+set(CMAKE_C_FLAGS "$EXT_CFLAGS")
+set(CMAKE_CXX_FLAGS "$EXT_CFLAGS")
+EOF
+  mkdir build || true
+  cd build
+  cmake \
+  -DCMAKE_TOOLCHAIN_FILE=$PWD/../toolchain.cmake \
+  -DBUILD_SHARED_LIBS=ON \
+  -DLLVM_ENABLE_LIBCXX=ON \
+  -DLIBCXX_ENABLE_SHARED=OFF \
+  -DLIBCXX_ENABLE_STATIC=ON \
+  -DLIBCXXABI_ENABLE_SHARED=OFF \
+  -DLIBCXXABI_ENABLE_STATIC=ON \
+  -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
+  -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
+  -DLIBCXX_USE_COMPILER_RT=ON \
+  -DLLVM_ENABLE_PIC=ON \
+  -DLLVM_ENABLE_ASSERTIONS=1 \
+  -DLLVM_TARGETS_TO_BUILD='host;AMDGPU;NVPTX' \
+  -DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;clang-tools-extra;mlir;openmp' \
+  -DLLVM_ENABLE_RUNTIMES='libcxx;libcxxabi;libunwind' \
+  -G "Ninja" \
+  -S ../llvm-project/llvm/
+}
+build() {
+  cd build
+  cmake --build .
+}
+
+check() {
+#  cd build
+#  ninja check
+echo
+}
+
+#packaging() {
+
+#}
+package() {
+  cd build
+  cmake --install . --prefix "$pkgdir"/opt/rocm-${pkgver}/lib/llvm
+}
