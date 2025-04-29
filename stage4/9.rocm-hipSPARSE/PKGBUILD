@@ -9,9 +9,8 @@ url="https://github.com/ROCm/ROCT-Thunk-Interface.git"
 
 source=(
     "git+https://github.com/ROCm/hipSPARSE.git#tag=rocm-$pkgver"
-    "hipSPARSE.patch"
 )
-b2sums=('SKIP' 'SKIP')
+b2sums=('SKIP')
 depends=(
     "rocm-clr=${pkgver}"
     "rocm-rocSPARSE=${pkgver}"
@@ -19,14 +18,11 @@ depends=(
 PATH=/opt/rocm-${pkgver}/bin:/opt/rocm-${pkgver}/llvm/bin:$PATH
 prepare() {
 #  sed -i 's!-std=f2003!-std=f2018!g' hipSPARSE/library/CMakeLists.txt
-  if [ -n $AMDGPU_TARGETS ] && [ $AMDGPU_TARGETS != 'all' ]; then 
-    targetSet=( -DAMDGPU_TARGETS=${AMDGPU_TARGETS} )
+  if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then 
+    targetSet=( -DGPU_TARGETS=${GPU_TARGETS} )
   else
     targetSet=( )
   fi
-cd hipSPARSE
-  git apply ../hipSPARSE.patch
-cd ..
   cat  > toolchain.cmake << EOF
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_C_FLAGS "$CFLAGS")

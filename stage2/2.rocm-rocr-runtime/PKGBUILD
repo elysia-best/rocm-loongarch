@@ -21,7 +21,7 @@ prepare() {
   cd ..
   CFLAGS=""
   cat  > toolchain.cmake << EOF
-set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 set(CMAKE_C_FLAGS "$CFLAGS")
 set(CMAKE_CXX_FLAGS "$CFLAGS")
 set(CMAKE_BUILD_RPATH "/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib")

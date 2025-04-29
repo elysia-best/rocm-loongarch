@@ -20,11 +20,6 @@ prepare() {
   cd roctracer
     git apply ../roctracer.patch
   cd ..
-  if [ -n $AMDGPU_TARGETS ] && [ $AMDGPU_TARGETS != 'all' ]; then 
-    targetSet=( -DAMDGPU_TARGETS=$AMDGPU_TARGETS )
-  else
-    targetSet=( )
-  fi
   CFLAGS="-pipe  -fPIC"
   cat  > toolchain.cmake << EOF
 set(CMAKE_BUILD_TYPE "Release")
@@ -33,8 +28,8 @@ set(CMAKE_CXX_FLAGS "$CFLAGS")
 set(CMAKE_BUILD_RPATH "/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib")
 set(CMAKE_INSTALL_RPATH "/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib")
 set(CMAKE_FIND_ROOT_PATH "/opt/rocm-${pkgver}/")
-set(CMAKE_C_COMPILER "/opt/rocm-${pkgver}/lib/llvm/bin/amdclang")
-set(CMAKE_CXX_COMPILER "/opt/rocm-${pkgver}/lib/llvm/bin/amdclang++")
+set(CMAKE_C_COMPILER "/opt/rocm-${pkgver}/lib/llvm/bin/clang")
+set(CMAKE_CXX_COMPILER "/opt/rocm-${pkgver}/lib/llvm/bin/clang++")
 set(CMAKE_SHARED_LINKER_FLAGS "-L/opt/rocm-${pkgver}/lib64")
 set(CMAKE_EXE_LINKER_FLAGS "-L/opt/rocm-${pkgver}/lib64")
 list(APPEND CMAKE_MODULE_PATH "/opt/rocm-${pkgver}/lib64/cmake/hip/")
@@ -47,7 +42,6 @@ EOF
    -DCMAKE_BUILD_TYPE=Release \
    -DCMAKE_INSTALL_PREFIX=/opt/rocm-${pkgver} \
    -DCMAKE_TOOLCHAIN_FILE=$PWD/../toolchain.cmake \
-   ${targetSet[@]} \
   -G "Unix Makefiles"
   #sed -i '3921,d' build/hipify/src/device/device_table.h
 

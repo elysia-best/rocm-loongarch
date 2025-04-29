@@ -14,8 +14,8 @@ b2sums=('SKIP')
 depends=("rocm-clr=${pkgver}" "rocm-rocRAND")
 PATH=/opt/rocm-${pkgver}/bin:$PATH
 prepare() {
-  if [ -n $AMDGPU_TARGETS ] && [ $AMDGPU_TARGETS != 'all' ]; then 
-    targetSet=( -DAMDGPU_TARGETS=$AMDGPU_TARGETS )
+  if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then 
+    targetSet=( -DGPU_TARGETS=$GPU_TARGETS )
   else
     targetSet=( )
   fi
@@ -40,7 +40,6 @@ EOF
    -DCMAKE_TOOLCHAIN_FILE=$PWD/../toolchain.cmake \
    -DCMAKE_INSTALL_PREFIX=/opt/rocm-${pkgver} \
    -DBUILD_SHARED_LIBS=ON \
-   -DROCRAND_ROOT=/opt/rocm-${pkgver} \
    ${targetSet[@]} \
   -G "Unix Makefiles"
 }

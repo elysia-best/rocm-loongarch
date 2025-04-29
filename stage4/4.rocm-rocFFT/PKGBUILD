@@ -16,8 +16,8 @@ PATH=/opt/rocm-${pkgver}/bin:$PATH
 export ROCM_PATH=/opt/rocm-${pkgver}/
 export LD_LIBRARY_PATH=$ROCM_PATH/lib64:$LD_LIBRARY_PATH
 prepare() {
-  if [ -n $AMDGPU_TARGETS ] && [ $AMDGPU_TARGETS != 'all' ]; then 
-    targetSet=( -DGPU_TARGETS=$AMDGPU_TARGETS )
+  if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then 
+    targetSet=( -DGPU_TARGETS=$GPU_TARGETS )
   else
     targetSet=( )
   fi

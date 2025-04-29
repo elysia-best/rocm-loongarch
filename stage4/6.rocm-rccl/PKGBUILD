@@ -36,8 +36,8 @@ EOF
   rm -rf build || true
   mkdir build || true
   cd build
-  if [ -n $AMDGPU_TARGETS ] && [ $AMDGPU_TARGETS != 'all' ]; then 
-    targetSet=( -DGPU_TARGETS=$AMDGPU_TARGETS )
+  if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then 
+    targetSet=( -DGPU_TARGETS=$GPU_TARGETS )
   else
     targetSet=( )
   fi

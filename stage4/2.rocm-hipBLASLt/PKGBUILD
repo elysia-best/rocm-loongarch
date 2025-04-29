@@ -16,15 +16,15 @@ b2sums=('SKIP' 'SKIP' 'SKIP')
 depends=("rocm-clr=${pkgver}" "rocm-hipBLAS-common=${pkgver}")
 export PATH=$PWD/src/build/virtualenv/bin:/opt/rocm-${pkgver}/bin:/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
 export ROCM_PATH=/opt/rocm-${pkgver}/
-export LD_LIBRARY_PATH=$ROCM_PATH/lib64:$LD_LIBRARY_PATH
+#export LD_LIBRARY_PATH=$ROCM_PATH/lib64:$LD_LIBRARY_PATH
 prepare() {
   cd hipBLASLt
     git apply ../lt.patch
     git apply ../1516.patch
   cd ..
   mkdir build || true
-  if [ -n $AMDGPU_TARGETS ] && [ $AMDGPU_TARGETS != 'all' ]; then 
-    targetSet=( -DAMDGPU_TARGETS=$AMDGPU_TARGETS -DTensile_ARCHITECTURE=$AMDGPU_TARGETS )
+  if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then 
+    targetSet=( -DAMDGPU_TARGETS=$GPU_TARGETS -DTensile_ARCHITECTURE=$GPU_TARGETS )
   else
     targetSet=( )
   fi
@@ -38,7 +38,6 @@ set(CMAKE_INSTALL_RPATH "/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/
 set(CMAKE_FIND_ROOT_PATH "/opt/rocm-${pkgver}/")
 set(CMAKE_C_COMPILER "/opt/rocm-${pkgver}/lib/llvm/bin/clang")
 set(CMAKE_CXX_COMPILER "/opt/rocm-${pkgver}/lib/llvm/bin/amdclang++")
-
 set(CMAKE_SHARED_LINKER_FLAGS "-L/opt/rocm-${pkgver}/lib64")
 set(CMAKE_EXE_LINKER_FLAGS "-L/opt/rocm-${pkgver}/lib64")
 EOF

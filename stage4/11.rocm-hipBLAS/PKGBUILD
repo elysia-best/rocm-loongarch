@@ -21,8 +21,8 @@ PATH=/opt/rocm-${pkgver}/bin:$PATH
 prepare() {
 #  sed -i '32d' hipBLAS/test/CMakeLists.txt
 #  sed -i '32i find_package( HIP CONFIG REQUIRED )' hipBLAS/test/CMakeLists.txt
-  if [ -n $AMDGPU_TARGETS ] && [ $AMDGPU_TARGETS != 'all' ]; then 
-    targetSet=( -DGPU_TARGETS=$AMDGPU_TARGETS )
+  if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then 
+    targetSet=( -DGPU_TARGETS=$GPU_TARGETS )
   else
     targetSet=( )
   fi

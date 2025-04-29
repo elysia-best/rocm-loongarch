@@ -103,6 +103,20 @@ index 3ef00f75735b..40939eb503bf 100644
  namespace llvm {
  class Target;
  class MCAsmBackend;
+diff --git a/llvm/lib/Target/LoongArch/LoongArchTargetMachine.cpp b/llvm/lib/Target/LoongArch/LoongArchTargetMachine.cpp
+index e83fc08696ae..23497d5c6568 100644
+--- a/llvm/lib/Target/LoongArch/LoongArchTargetMachine.cpp
++++ b/llvm/lib/Target/LoongArch/LoongArchTargetMachine.cpp
+@@ -68,8 +68,7 @@ static CodeModel::Model
+ getEffectiveLoongArchCodeModel(const Triple &TT,
+                                std::optional<CodeModel::Model> CM) {
+   if (!CM)
+-    return CodeModel::Small;
+-
++    return TT.isArch64Bit() ? CodeModel::Medium : CodeModel::Small;
+   switch (*CM) {
+   case CodeModel::Small:
+     return *CM;
 diff --git a/mlir/include/mlir/Dialect/Affine/IR/ValueBoundsOpInterfaceImpl.h b/mlir/include/mlir/Dialect/Affine/IR/ValueBoundsOpInterfaceImpl.h
 index 451c466fa0c9..2e06a1b32e4b 100644
 --- a/mlir/include/mlir/Dialect/Affine/IR/ValueBoundsOpInterfaceImpl.h

@@ -14,8 +14,8 @@ b2sums=('SKIP' )
 depends=("rocm-clr=${pkgver}")
 PATH=/opt/rocm-${pkgver}/bin:$PATH
 prepare() {
-  if [ -n $AMDGPU_TARGETS ] && [ $AMDGPU_TARGETS != 'all' ]; then 
-    targetSet=( -DAMDGPU_TARGETS=$AMDGPU_TARGETS )
+  if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then 
+    targetSet=( -DGPU_TARGETS=$GPU_TARGETS )
   else
     targetSet=( )
   fi

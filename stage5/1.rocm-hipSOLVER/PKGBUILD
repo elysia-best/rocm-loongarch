@@ -21,9 +21,9 @@ prepare() {
 #  sed -i '32d' hipSOLVER/test/CMakeLists.txt
 #  sed -i '32i find_package( HIP CONFIG REQUIRED )' hipSOLVER/test/CMakeLists.txt
   EXT_CFLAGS="-fPIC"
-  if [ -n $AMDGPU_TARGETS ] && [ $AMDGPU_TARGETS != 'all' ]; then
-    targetSet=( -DAMDGPU_TARGETS=${AMDGPU_TARGETS} )
-    IFS=';' read -a targets <<<  "$AMDGPU_TARGETS"
+  if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then
+    targetSet=( -DAMDGPU_TARGETS=${GPU_TARGETS} )
+    IFS=';' read -a targets <<<  "$GPU_TARGETS"
     for target in "${targets[@]}"; do
       EXT_CFLAGS="$EXT_CFLAGS --offload-arch=$target"
     done

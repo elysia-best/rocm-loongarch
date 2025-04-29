@@ -10,21 +10,17 @@ url="https://github.com/ROCm/ROCT-Thunk-Interface.git"
 
 source=(
     "git+https://github.com/ROCm/hipFFT.git#tag=rocm-$pkgver"
-    "hipFFT.patch"
 )
 
-b2sums=('SKIP' 'SKIP')
+b2sums=('SKIP')
 depends=("rocm-clr=${pkgver}")
 PATH=/opt/rocm-${pkgver}/bin:$PATH
 export ROCM_PATH=/opt/rocm-${pkgver}/
 prepare() {
 #  rm -rf hipFFT/clients/rocFFT || true
 #  ln -s $PWD/rocFFT hipFFT/clients/rocFFT
-  cd hipFFT
-    git apply ../hipFFT.patch
-  cd ..
-  if [ -n $AMDGPU_TARGETS ] && [ $AMDGPU_TARGETS != 'all' ]; then 
-    targetSet=( -DAMDGPU_TARGETS=${AMDGPU_TARGETS} )
+  if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then 
+    targetSet=( -DAMDGPU_TARGETS=${GPU_TARGETS} )
   else
     targetSet=( )
   fi
