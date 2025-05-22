@@ -1,7 +1,7 @@
 pkgbase='rocm-magma'
 pkgname=('rocm-magma')
-pkgver=6.3.3
-pkgrel=633000
+pkgver=6.4.0
+pkgrel=640000
 pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
 arch=('loong64' 'x86_64' 'riscv64')
 license=('MIT')
@@ -17,11 +17,7 @@ depends=("rocm-clr=${pkgver}")
 export PATH=/opt/rocm-${pkgver}/bin:/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
 export ROCM_HOME=/opt/rocm-$pkgver/
 export HIPDIR=$ROCM_HOME/hip
-export EXT_CFLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${pkgver}/lib -Wl,-rpath=/opt/rocm-${pkgver}/lib/llvm/lib -fPIC  -Wno-gnu-line-marker  -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include -I/opt/rocm-${pkgver}/include/hipblas/ -I/opt/rocm-${pkgver}/include/hipsparse  -L/opt/rocm-${pkgver}/lib"
-if [ $CARCH == 'loong64' ];
-then
-  EXT_CFLAGS="-mcmodel=extreme $EXT_CFLAGS"
-fi
+export EXT_CFLAGS="-pipe -Wl,-rpath=/opt/rocm-${pkgver}/lib -Wl,-rpath=/opt/rocm-${pkgver}/lib/llvm/lib -fPIC  -Wno-gnu-line-marker  -Wno-unused-command-line-argument -I/opt/rocm-${pkgver}/include -I/opt/rocm-${pkgver}/include/hipblas/ -I/opt/rocm-${pkgver}/include/hipsparse  -L/opt/rocm-${pkgver}/lib -L/opt/rocm-${pkgver}/lib64"
 export PYTORCH_ROCM_ARCH="gfx1030;gfx1100;gfx1101;gfx1102"
 prepare() {
   cd magma
@@ -33,7 +29,7 @@ prepare() {
 }
 build() {
   cd magma
-    LANG=C.UTF-8 make lib/libmagma.so -j$(nproc)
+    LANG=C.UTF-8 make lib/libmagma.so  -j$(nproc) -k
   cd ..
 }
 

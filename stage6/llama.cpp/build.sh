@@ -7,20 +7,23 @@ function fetch(){
   git clone --recursive https://github.com/ggml-org/llama.cpp
 }
 export HIPCLANG_AGENT=/opt/rocm-$pkgver/lib/llvm/bin/clang++
+export HIPCC_AGENT=/opt/rocm-$pkgver/bin/hipcc
 function prepare() {
   mkdir build
   cd build
-  if [ -n $AMDGPU_TARGETS ] && [ $AMDGPU_TARGETS != 'all' ]; then
-    targetSet=( -DAMDGPU_TARGETS=${AMDGPU_TARGETS} )
+  if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then
+    targetSet=( -DAMDGPU_TARGETS=${GPU_TARGETS} )
   else
     targetSet=( )
   fi
+  EXT_CFLAGS="-fPIC -I/opt/rocm-${pkgver}/include  -L/opt/rocm-${pkgver}/lib -L/opt/rocm-${pkgver}/lib64"
   cmake ../llama.cpp \
    -DCMAKE_C_COMPILER=/opt/rocm-$pkgver/lib/llvm/bin/clang \
    -DCMAKE_CXX_COMPILER=/opt/rocm-$pkgver/lib/llvm/bin/clang++ \
    -DCMAKE_HIP_COMPILER=$PWD/../hipclang-agent.sh \
    -DCMAKE_BUILD_TYPE=Release \
    -DGGML_HIP=ON \
+   -DCMAKE_HIP_FLAGS="${EXT_CFLAGS}" \
    -DCMAKE_INSTALL_RPATH="/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib/llvm/lib;/opt/rocm-${pkgver}/lib64;.;../lib64" \
    -DCMAKE_BUILD_RPATH="/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib/llvm/lib;/opt/rocm-${pkgver}/lib64" \
    ${targetSet[@]} \

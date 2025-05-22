@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index c062d1dd3..f02ab0d22 100644
+index 1fe1bc91d..075b87b31 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -24,7 +24,7 @@ endif()
@@ -11,7 +11,7 @@ index c062d1dd3..f02ab0d22 100644
  
  # Usage: for customized Python location cmake -DCK_USE_ALTERNATIVE_PYTHON="/opt/Python-3.8.13/bin/python3.8"
  # CK Codegen requires dataclass which is added in Python 3.7
-@@ -338,147 +338,6 @@ else()
+@@ -380,147 +380,6 @@ else()
      add_compile_definitions(__HIP_PLATFORM_HCC__=1)
  endif()
  
@@ -159,20 +159,11 @@ index c062d1dd3..f02ab0d22 100644
  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-@@ -505,7 +364,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERS
-     add_compile_options(-fdiagnostics-color=always)
- endif()
- 
--add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_CFG_INTDIR})
-+# add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_CFG_INTDIR})
- 
- file(GLOB_RECURSE INSTANCE_FILES "${PROJECT_SOURCE_DIR}/*/device_*_instance.cpp")
- file(GLOB dir_list RELATIVE ${PROJECT_SOURCE_DIR}/library/src/tensor_operation_instance/gpu ${PROJECT_SOURCE_DIR}/library/src/tensor_operation_instance/gpu/*)
 diff --git a/example/CMakeLists.txt b/example/CMakeLists.txt
-index ad3f7c787..d2796932d 100644
+index bcb62df62..365b1a56a 100644
 --- a/example/CMakeLists.txt
 +++ b/example/CMakeLists.txt
-@@ -95,7 +95,7 @@ function(add_example_executable EXAMPLE_NAME FILE_NAME)
+@@ -119,7 +119,7 @@ function(add_example_executable EXAMPLE_NAME FILE_NAME)
          add_test(NAME ${EXAMPLE_NAME} COMMAND $<TARGET_FILE:${EXAMPLE_NAME}> ${ARGN})
          set_property(TARGET ${EXAMPLE_NAME} PROPERTY HIP_ARCHITECTURES ${EX_TARGETS} )
          add_dependencies(examples ${EXAMPLE_NAME})
@@ -182,10 +173,10 @@ index ad3f7c787..d2796932d 100644
          set(result 0)
      endif()
 diff --git a/include/ck/ck.hpp b/include/ck/ck.hpp
-index 5f74d51a6..f67595d54 100644
+index 1ec0c6bc2..b31903525 100644
 --- a/include/ck/ck.hpp
 +++ b/include/ck/ck.hpp
-@@ -21,7 +21,11 @@ CK_DECLARE_ENV_VAR_BOOL(CK_LOGGING)
+@@ -23,7 +23,11 @@ CK_DECLARE_ENV_VAR_BOOL(CK_LOGGING)
  
  // constant address space for kernel parameter
  // https://llvm.org/docs/AMDGPUUsage.html#address-spaces
@@ -198,10 +189,10 @@ index 5f74d51a6..f67595d54 100644
  // launch bounds
  #define CK_USE_LAUNCH_BOUNDS 1
 diff --git a/library/src/tensor_operation_instance/gpu/CMakeLists.txt b/library/src/tensor_operation_instance/gpu/CMakeLists.txt
-index f82176ffc..565fefb49 100644
+index 5b88d5f25..2ef26ee0b 100755
 --- a/library/src/tensor_operation_instance/gpu/CMakeLists.txt
 +++ b/library/src/tensor_operation_instance/gpu/CMakeLists.txt
-@@ -113,7 +113,6 @@ function(add_instance_library INSTANCE_NAME)
+@@ -159,7 +159,6 @@ function(add_instance_library INSTANCE_NAME)
          endif()
  
          set_target_properties(${INSTANCE_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -210,10 +201,10 @@ index f82176ffc..565fefb49 100644
          message("add_instance_library ${INSTANCE_NAME}")
      else()
 diff --git a/library/src/utility/CMakeLists.txt b/library/src/utility/CMakeLists.txt
-index 296e6c993..1bcf24cdf 100644
+index 28883efef..1573c84cb 100644
 --- a/library/src/utility/CMakeLists.txt
 +++ b/library/src/utility/CMakeLists.txt
-@@ -27,4 +27,3 @@ rocm_install(
+@@ -31,4 +31,3 @@ rocm_install(
      DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/composable_kernel
  )
  

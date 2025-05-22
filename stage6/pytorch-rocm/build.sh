@@ -1,9 +1,9 @@
 #!/bin/bash
-export rocver=6.3.2
+export rocver=6.4.0
 export ROCM_HOME=/opt/rocm-$rocver/
 export ROCM_PATH=$ROCM_HOME
 export ROCM_SOURCE_DIR=$ROCM_HOME
-export HCC_AMDGPU_TARGET="gfx1030;gfx1100;gfx1101;gfx1102"
+export HCC_AMDGPU_TARGET="gfx1030;gfx1102"
 export CC=$ROCM_HOME/lib/llvm/bin/clang
 export CXX=$ROCM_HOME/lib/llvm/bin/clang++
 export BUILD_TEST=0
@@ -21,19 +21,20 @@ export CMAKE_PREFIX_PATH=/opt/rocm-$rocver/lib:/opt/rocm-$rocver/lib64/:/opt/roc
 export BLAS_SET_BY_USER=FALSE
 export absl_DIR=$PWD/rel-abseil/lib64/cmake/absl/
 export TORCH_USE_HIP_DSA=1
-export LDFLAGS="-Wl,-rpath-link,/opt/rocm-$rocver/lib64/ -Wl,-rpath-link,/opt/rocm-$rocver/lib/  -L/opt/rocm-${rocver}/lib  -Wl,-rpath=/opt/rocm-${rocver}/lib/llvm/lib  -L/opt/rocm-${rocver}/lib/llvm/lib"
-export EXT_FLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${rocver}/lib -Wl,-rpath=/opt/rocm-${rocver}/lib/llvm/lib -fPIC -stdlib=libc++ -Wno-gnu-line-marker -L/opt/rocm-${rocver}/lib/llvm/lib -I/opt/rocm-${rocver}/lib/llvm/include/c++/v1 -Wno-unused-command-line-argument -I/opt/rocm-${rocver}/include  -L/opt/rocm-${rocver}/lib -fexperimental-library -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE  -I/opt/rocm-${rocver}/include/hipblas/ -I/opt/rocm-${rocver}/include/hipsparse"
+export LDFLAGS="-Wl,-rpath-link,/opt/rocm-$rocver/lib64/ -Wl,-rpath-link,/opt/rocm-$rocver/lib/  -L/opt/rocm-${rocver}/lib  -Wl,-rpath=/opt/rocm-${rocver}/lib/llvm/lib "
+export EXT_FLAGS="-pipe -fopenmp -Wl,-rpath=/opt/rocm-${rocver}/lib -Wl,-rpath=/opt/rocm-${rocver}/lib/llvm/lib -fPIC -Wno-gnu-line-marker -Wno-unused-command-line-argument -I/opt/rocm-${rocver}/include  -L/opt/rocm-${rocver}/lib  -I/opt/rocm-${rocver}/include/hipblas/ -I/opt/rocm-${rocver}/include/hipsparse"
 _ARCH=$($CC $EXT_FLAGS --version | grep Target|awk '{print $2}'|awk -F - '{print $1}')
-if [ $_ARCH == 'loongarch64' ];
-then
-  EXT_CFLAGS="-mcmodel=extreme $EXT_CFLAGS"
-fi
+#if [ $_ARCH == 'loongarch64' ];
+#then
+#export  EXT_FLAGS="-mcmodel=extreme $EXT_FLAGS"
+#fi
 export CFLAGS="$EXT_FLAGS"
 export CXXFLAGS="$EXT_FLAGS"
 export CMAKE_CXX_FLAGS="$EXT_FLAGS"
 export HIP_CLANG_FLAGS="$EXT_FLAGS"
-export HIP_CXX_FLAGS="$EXT_FLAGS"
+#export HIP_CXX_FLAGS_RELEASE="$EXT_FLAGS -stdlib=libc++ -L/opt/rocm-${rocver}/lib/llvm/lib -I/opt/rocm-${rocver}/lib/llvm/include/c++/v1 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE"
 export BUILD_CUSTOM_PROTOBUF=ON
+export AOTRITON_INSTALLED_PREFIX=$ROCM_HOME/aotriton
 export USE_FLASH_ATTENTION=OFF
 export USE_MEM_EFF_ATTENTION=OFF
 export USE_TENSORPIPE=OFF
@@ -80,7 +81,7 @@ function _clone_m() {
 }
 function fetch() {
   _fetch abseil-cpp.git            https://github.com/abseil/abseil-cpp.git                              master
-  _fetch pytorch.git               https://github.com/ROCm/pytorch.git                                   rocm6.3_internal_testing
+  _fetch pytorch.git               https://github.com/ROCm/pytorch.git                                   rocm6.4_internal_testing
   _fetch pybind11.git              https://github.com/pybind/pybind11.git                                master
   _fetch cub.git                   https://github.com/NVlabs/cub.git                                     main
   _fetch eigen.git                 https://gitlab.com/libeigen/eigen.git                                 master
@@ -141,8 +142,9 @@ function _ln (){
   ln -s $PWD/$1 $2
 }
 function prepare() {
-  _clone_m abseil-cpp          master 20230802.0
-  _clone pytorch               rocm6.3_internal_testing
+  _clone_m abseil-cpp          master 20250127.0
+#20230802.0
+  _clone pytorch               rocm6.4_internal_testing
   _clone pybind11              master
   _clone cub                   main
   _clone eigen                 master
@@ -287,7 +289,8 @@ CFLAGS="$EXT_FLAGS" CXXFLAGS="$EXT_FLAGS" pip install \
     jinja2 \
     fsspec \
     packaging \
-    lark
+    lark \
+   numpy
   cd abseil-cpp
     sed -i \
       -e '/"-maes",/d' \
@@ -313,16 +316,25 @@ CFLAGS="$EXT_FLAGS" CXXFLAGS="$EXT_FLAGS" pip install \
     ninja
     ninja install
   cd ..
+#  cd pytorch
+#    python tools/amd_build/build_amd.py
+#    git apply ../pytorch.patch --rej
+#    python setup.py build --cmake-only
+#  cd ..
+}
+function config(){
+  source build-env/bin/activate
   cd pytorch
-    python tools/amd_build/build_amd.py
-    git apply ../pytorch.patch --rej
+    rm -rf build
+#    python tools/amd_build/build_amd.py
+#    git apply ../pytorch.patch --rej
     python setup.py build --cmake-only
   cd ..
 }
 function build() {
   source build-env/bin/activate
   cd pytorch/build
-    ninja -j32 -k0
+    ninja -j1
   cd ../..
 }
 function package(){
@@ -332,12 +344,16 @@ function package(){
     cp dist/torch-*.whl ..
   cd ..
 }
-
+function clean(){
+ ls|grep -v \\.git|grep -v \\.sh|grep -v \\.patch|xargs rm -rf
+}
 function main(){
 #  fetch
-  prepare
-  build
-  package
+#  prepare
+# config
+ build
+#  package
+# clean
 }
 main
 

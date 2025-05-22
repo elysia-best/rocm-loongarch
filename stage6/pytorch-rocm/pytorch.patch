@@ -1,3 +1,185 @@
+diff --git a/c10/util/Registry.h b/c10/util/Registry.h
+index 3dd3ec54fd..1477e0b549 100644
+--- a/c10/util/Registry.h
++++ b/c10/util/Registry.h
+@@ -13,7 +13,10 @@
+ #include <cstdlib>
+ #include <functional>
+ #include <memory>
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
+ #include <mutex>
++#pragma pop_macro("__glibcxx_assert")
+ #include <stdexcept>
+ #include <string>
+ #include <unordered_map>
+diff --git a/c10/util/StringUtil.h b/c10/util/StringUtil.h
+index 88a91c84ef..9f0b4ffa99 100644
+--- a/c10/util/StringUtil.h
++++ b/c10/util/StringUtil.h
+@@ -7,7 +7,10 @@
+ 
+ #include <cstddef>
+ #include <ostream>
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
+ #include <sstream>
++#pragma pop_macro("__glibcxx_assert")
+ #include <string>
+ 
+ C10_CLANG_DIAGNOSTIC_PUSH()
+diff --git a/aten/src/ATen/miopen/Exceptions.h b/aten/src/ATen/miopen/Exceptions.h
+index f5f0a4785b..a21eacd94c 100644
+--- a/aten/src/ATen/miopen/Exceptions.h
++++ b/aten/src/ATen/miopen/Exceptions.h
+@@ -3,7 +3,11 @@
+ #include <ATen/miopen/miopen-wrapper.h>
+ #include <string>
+ #include <stdexcept>
++
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
+ #include <sstream>
++#pragma pop_macro("__glibcxx_assert")
+ 
+ namespace at { namespace native {
+ 
+diff --git a/c10/core/SymInt.h b/c10/core/SymInt.h
+index 9fc40f428f..1e4c751ac1 100644
+--- a/c10/core/SymInt.h
++++ b/c10/core/SymInt.h
+@@ -9,7 +9,10 @@
+ 
+ #include <cstdint>
+ #include <iterator>
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
+ #include <numeric>
++#pragma pop_macro("__glibcxx_assert")
+ #include <optional>
+ #include <ostream>
+ #include <type_traits>
+diff --git a/c10/core/SymNodeImpl.h b/c10/core/SymNodeImpl.h
+index 0847af2fce..8ea0ba2ac0 100644
+--- a/c10/core/SymNodeImpl.h
++++ b/c10/core/SymNodeImpl.h
+@@ -5,7 +5,10 @@
+ #include <c10/util/Exception.h>
+ #include <c10/util/intrusive_ptr.h>
+ #include <cstdint>
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
+ #include <optional>
++#pragma pop_macro("__glibcxx_assert")
+ #include <ostream>
+ #include <string>
+ 
+diff --git a/c10/core/impl/COWDeleter.h b/c10/core/impl/COWDeleter.h
+index e26625a8c7..031bced31d 100644
+--- a/c10/core/impl/COWDeleter.h
++++ b/c10/core/impl/COWDeleter.h
+@@ -6,7 +6,10 @@
+ #include <atomic>
+ #include <cstdint>
+ #include <memory>
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
+ #include <shared_mutex>
++#pragma pop_macro("__glibcxx_assert")
+ #include <variant>
+ 
+ namespace c10::impl::cow {
+diff --git a/c10/util/Optional.h b/c10/util/Optional.h
+index 1c62bc480e..3c876a0476 100644
+--- a/c10/util/Optional.h
++++ b/c10/util/Optional.h
+@@ -1,7 +1,11 @@
+ #ifndef C10_UTIL_OPTIONAL_H_
+ #define C10_UTIL_OPTIONAL_H_
+ 
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
+ #include <optional>
++#pragma pop_macro("__glibcxx_assert")
++
+ #include <type_traits>
+ 
+ // Macros.h is not needed, but it does namespace shenanigans that lots
+diff --git a/c10/util/typeid.h b/c10/util/typeid.h
+index 2c6ac38882..2498353391 100644
+--- a/c10/util/typeid.h
++++ b/c10/util/typeid.h
+@@ -5,7 +5,10 @@
+ #include <cstddef>
+ #include <cstdint>
+ #include <memory>
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
+ #include <mutex>
++#pragma pop_macro("__glibcxx_assert")
+ #include <ostream>
+ #include <string>
+ #include <type_traits>
+diff --git a/c10/util/Backtrace.h b/c10/util/Backtrace.h
+index 500bf4cf40..bf2ae9fc4c 100644
+--- a/c10/util/Backtrace.h
++++ b/c10/util/Backtrace.h
+@@ -2,7 +2,10 @@
+ #define C10_UTIL_BACKTRACE_H_
+ 
+ #include <cstddef>
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
+ #include <memory>
++#pragma pop_macro("__glibcxx_assert")
+ #include <string>
+ #include <typeinfo>
+ 
+diff --git a/c10/core/Device.h b/c10/core/Device.h
+index cbe9129852..ae2957a69b 100644
+--- a/c10/core/Device.h
++++ b/c10/core/Device.h
+@@ -6,7 +6,10 @@
+ 
+ #include <cstddef>
+ #include <cstdint>
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
+ #include <functional>
++#pragma pop_macro("__glibcxx_assert")
+ #include <iosfwd>
+ #include <string>
+ 
+diff --git a/c10/core/DispatchKey.h b/c10/core/DispatchKey.h
+index 5e417ae4a3..7bd9e286de 100644
+--- a/c10/core/DispatchKey.h
++++ b/c10/core/DispatchKey.h
+@@ -4,7 +4,10 @@
+ #include <c10/macros/Export.h>
+ #include <cstddef>
+ #include <cstdint>
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
+ #include <functional>
++#pragma pop_macro("__glibcxx_assert")
+ #include <ostream>
+ #include <string>
+ 
+diff --git a/c10/core/DeviceType.h b/c10/core/DeviceType.h
+index 911c863363..247074f065 100644
+--- a/c10/core/DeviceType.h
++++ b/c10/core/DeviceType.h
+@@ -9,7 +9,10 @@
+ 
+ #include <cstddef>
+ #include <cstdint>
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
+ #include <functional>
++#pragma pop_macro("__glibcxx_assert")
+ #include <ostream>
+ #include <string>
+ 
 diff --git a/c10/cuda/CUDADeviceAssertion.h b/c10/cuda/CUDADeviceAssertion.h
 index 063c783693..a0f922744e 100644
 --- a/c10/cuda/CUDADeviceAssertion.h
@@ -12,37 +194,21 @@ index 063c783693..a0f922744e 100644
  
  } // namespace c10::cuda
 diff --git a/cmake/public/LoadHIP.cmake b/cmake/public/LoadHIP.cmake
-index 9f74f1db7d..c2a1716598 100644
+index 3eb34b0b83..538140fc16 100644
 --- a/cmake/public/LoadHIP.cmake
 +++ b/cmake/public/LoadHIP.cmake
-@@ -38,9 +38,10 @@ macro(find_package_and_print_version PACKAGE_NAME)
- endmacro()
- 
+@@ -77,9 +77,10 @@ endmacro()
  # Find the HIP Package
--find_package_and_print_version(HIP 1.0)
-+find_package_and_print_version(HIP)
+ # MODULE argument is added for clarity that CMake is searching
+ # for FindHIP.cmake in Module mode
+-find_package_and_print_version(HIP 1.0 MODULE)
++find_package_and_print_version(HIP MODULE)
  
  if(HIP_FOUND)
 +  include(${ROCM_PATH}/lib64/cmake/hip/FindHIP.cmake)
    set(PYTORCH_FOUND_HIP TRUE)
-   set(FOUND_ROCM_VERSION_H FALSE)
  
-@@ -113,15 +114,6 @@ if(HIP_FOUND)
-   message("HIP_VERSION_MINOR: ${HIP_VERSION_MINOR}")
-   message("TORCH_HIP_VERSION: ${TORCH_HIP_VERSION}")
- 
--  message("\n***** Library versions from dpkg *****\n")
--  execute_process(COMMAND dpkg -l COMMAND grep rocm-dev COMMAND awk "{print $2 \" VERSION: \" $3}")
--  execute_process(COMMAND dpkg -l COMMAND grep rocm-libs COMMAND awk "{print $2 \" VERSION: \" $3}")
--  execute_process(COMMAND dpkg -l COMMAND grep hsakmt-roct COMMAND awk "{print $2 \" VERSION: \" $3}")
--  execute_process(COMMAND dpkg -l COMMAND grep rocr-dev COMMAND awk "{print $2 \" VERSION: \" $3}")
--  execute_process(COMMAND dpkg -l COMMAND grep -w hcc COMMAND awk "{print $2 \" VERSION: \" $3}")
--  execute_process(COMMAND dpkg -l COMMAND grep hip-base COMMAND awk "{print $2 \" VERSION: \" $3}")
--  execute_process(COMMAND dpkg -l COMMAND grep hip_hcc COMMAND awk "{print $2 \" VERSION: \" $3}")
--
-   message("\n***** Library versions from cmake find_package *****\n")
- 
-   set(CMAKE_HIP_CLANG_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+   # Find ROCM version for checks
 diff --git a/third_party/sleef.BUILD b/third_party/sleef.BUILD
 index f22a6e905e..8eee89d689 100644
 --- a/third_party/sleef.BUILD
@@ -94,19 +260,6 @@ index 01cc3a4812..341cbaa00f 100644
          LINK_LIBRARIES ${CMAKE_${LANG}_VERBOSE_FLAG} ${OpenMP_libomp_LIBRARY}
          OUTPUT_VARIABLE OpenMP_TRY_COMPILE_OUTPUT
        )
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index dee2a96a01..1b164b882a 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -883,7 +883,7 @@ cmake_dependent_option(
- #
- if(USE_ROCM)
-   if(USE_FLASH_ATTENTION OR USE_MEM_EFF_ATTENTION)
--    include(cmake/External/aotriton.cmake)
-+#    include(cmake/External/aotriton.cmake)
-   endif()
- endif()
- 
 diff --git a/torch/CMakeLists.txt b/torch/CMakeLists.txt
 index 8c71c0b95f..b5c8d32ea4 100644
 --- a/torch/CMakeLists.txt
@@ -121,7 +274,7 @@ index 8c71c0b95f..b5c8d32ea4 100644
  
  if(USE_XPU)
 diff --git a/aten/src/ATen/cpu/Utils.cpp b/aten/src/ATen/cpu/Utils.cpp
-index a50e52155b..57af51c015 100644
+index b7b99e50d9..5e9020e5fd 100644
 --- a/aten/src/ATen/cpu/Utils.cpp
 +++ b/aten/src/ATen/cpu/Utils.cpp
 @@ -1,6 +1,6 @@
@@ -135,40 +288,58 @@ index a50e52155b..57af51c015 100644
 @@ -10,7 +10,7 @@
  
  namespace at::cpu {
- bool is_cpu_support_avx2() {
+ bool is_avx2_supported() {
 -#if !defined(__s390x__) && !defined(__powerpc__)
 +#if !defined(__s390x__) && !defined(__powerpc__)&& !defined(__loongarch_lp64)
    return cpuinfo_initialize() && cpuinfo_has_x86_avx2();
  #else
    return false;
-@@ -18,7 +18,7 @@ bool is_cpu_support_avx2() {
+@@ -18,7 +18,7 @@ bool is_avx2_supported() {
  }
  
- bool is_cpu_support_avx512() {
+ bool is_avx512_supported() {
 -#if !defined(__s390x__) && !defined(__powerpc__)
 +#if !defined(__s390x__) && !defined(__powerpc__)&& !defined(__loongarch_lp64)
    return cpuinfo_initialize() && cpuinfo_has_x86_avx512f() && cpuinfo_has_x86_avx512vl() && cpuinfo_has_x86_avx512bw() && cpuinfo_has_x86_avx512dq();
  #else
    return false;
-@@ -26,7 +26,7 @@ bool is_cpu_support_avx512() {
+@@ -26,7 +26,7 @@ bool is_avx512_supported() {
  }
  
- bool is_cpu_support_avx512_vnni() {
+ bool is_avx512_vnni_supported() {
 -#if !defined(__s390x__) && !defined(__powerpc__)
 +#if !defined(__s390x__) && !defined(__powerpc__)&& !defined(__loongarch_lp64)
    return cpuinfo_initialize() && cpuinfo_has_x86_avx512vnni();
  #else
    return false;
-@@ -34,7 +34,7 @@ bool is_cpu_support_avx512_vnni() {
+@@ -34,7 +34,7 @@ bool is_avx512_vnni_supported() {
  }
  
- bool is_cpu_support_amx_tile() {
+ bool is_avx512_bf16_supported() {
+-#if !defined(__s390x__) && !defined(__powerpc__)
++#if !defined(__s390x__) && !defined(__powerpc__)&& !defined(__loongarch_lp64)
+   return cpuinfo_initialize() && cpuinfo_has_x86_avx512bf16();
+ #else
+   return false;
+@@ -42,7 +42,7 @@ bool is_avx512_bf16_supported() {
+ }
+ 
+ bool is_amx_tile_supported() {
 -#if !defined(__s390x__) && !defined(__powerpc__)
 +#if !defined(__s390x__) && !defined(__powerpc__)&& !defined(__loongarch_lp64)
    return cpuinfo_initialize() && cpuinfo_has_x86_amx_tile();
  #else
    return false;
-@@ -46,7 +46,7 @@ bool init_amx() {
+@@ -50,7 +50,7 @@ bool is_amx_tile_supported() {
+ }
+ 
+ bool is_amx_fp16_supported() {
+-#if !defined(__s390x__) && !defined(__powerpc__)
++#if !defined(__s390x__) && !defined(__powerpc__)&& !defined(__loongarch_lp64)
+   return is_amx_tile_supported() && cpuinfo_has_x86_amx_fp16();
+ #else
+   return false;
+@@ -62,7 +62,7 @@ bool init_amx() {
      return false;
    }
  
@@ -177,7 +348,7 @@ index a50e52155b..57af51c015 100644
  #define XFEATURE_XTILECFG 17
  #define XFEATURE_XTILEDATA 18
  #define XFEATURE_MASK_XTILECFG (1 << XFEATURE_XTILECFG)
-@@ -77,7 +77,7 @@ bool init_amx() {
+@@ -101,7 +101,7 @@ bool is_arm_sve_supported() {
  }
  
  static uint32_t get_cache_size(int level) {
@@ -187,19 +358,18 @@ index a50e52155b..57af51c015 100644
      return 0;
    }
 diff --git a/cmake/Dependencies.cmake b/cmake/Dependencies.cmake
-index d0a6fb81dc..d958f1175c 100644
+index e36a087509..d15849b14e 100644
 --- a/cmake/Dependencies.cmake
 +++ b/cmake/Dependencies.cmake
-@@ -1036,7 +1036,7 @@ if(USE_ROCM)
+@@ -1007,6 +1007,7 @@ if(USE_ROCM)
        caffe2_update_option(USE_SYSTEM_NCCL ON)
      endif()
  
--
 +    separate_arguments(HIP_CXX_FLAGS UNIX_COMMAND $ENV{HIP_CXX_FLAGS})
      list(APPEND HIP_CXX_FLAGS -fPIC)
      list(APPEND HIP_CXX_FLAGS -D__HIP_PLATFORM_AMD__=1)
      list(APPEND HIP_CXX_FLAGS -DCUDA_HAS_FP16=1)
-@@ -1049,7 +1049,6 @@ if(USE_ROCM)
+@@ -1019,7 +1020,6 @@ if(USE_ROCM)
      list(APPEND HIP_CXX_FLAGS -Wno-duplicate-decl-specifier)
      list(APPEND HIP_CXX_FLAGS -DCAFFE2_USE_MIOPEN)
      list(APPEND HIP_CXX_FLAGS -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_HIP)
@@ -207,7 +377,7 @@ index d0a6fb81dc..d958f1175c 100644
      list(APPEND HIP_CXX_FLAGS -DHIPBLAS_V2)
      if(HIP_NEW_TYPE_ENUMS)
        list(APPEND HIP_CXX_FLAGS -DHIP_NEW_TYPE_ENUMS)
-@@ -1070,6 +1069,7 @@ if(USE_ROCM)
+@@ -1040,6 +1040,7 @@ if(USE_ROCM)
      set(HIP_CLANG_FLAGS ${HIP_CXX_FLAGS})
      # Ask hcc to generate device code during compilation so we can use
      # host linker to link.
@@ -215,12 +385,12 @@ index d0a6fb81dc..d958f1175c 100644
      list(APPEND HIP_CLANG_FLAGS -fno-gpu-rdc)
      foreach(pytorch_rocm_arch ${PYTORCH_ROCM_ARCH})
        list(APPEND HIP_CLANG_FLAGS --offload-arch=${pytorch_rocm_arch})
-@@ -1651,7 +1651,7 @@ if(USE_KINETO)
+@@ -1667,7 +1668,7 @@ if(USE_KINETO)
  
    if(NOT LIBKINETO_NOROCTRACER)
      if("$ENV{ROCM_SOURCE_DIR}" STREQUAL "")
 -      set(ENV{ROCM_SOURCE_DIR} "/opt/rocm")
-+      set(ENV{ROCM_SOURCE_DIR} "/opt/rocm-6.3.2")
++      set(ENV{ROCM_SOURCE_DIR} "/opt/rocm-6.4.0")
      endif()
    endif()
  
@@ -272,3 +442,47 @@ index 6c6608a2a7..05fb40eea8 100644
  
  
  if is_available() and not torch._C._rpc_init():
+diff --git a/caffe2/utils/string_utils.cc b/caffe2/utils/string_utils.cc
+index ba763738f7..81afd9c82f 100644
+--- a/caffe2/utils/string_utils.cc
++++ b/caffe2/utils/string_utils.cc
+@@ -4,6 +4,7 @@
+ #include <sstream>
+ #include <vector>
+ #include <cstdint>
++#include <stdint.h>
+ 
+ namespace caffe2 {
+ 
+diff --git a/aten/src/ATen/cuda/detail/DeviceThreadHandles.h b/aten/src/ATen/cuda/detail/DeviceThreadHandles.h
+index 1f80c863b6..b39a97b78c 100644
+--- a/aten/src/ATen/cuda/detail/DeviceThreadHandles.h
++++ b/aten/src/ATen/cuda/detail/DeviceThreadHandles.h
+@@ -16,10 +16,13 @@
+ #pragma once
+ 
+ #include <unordered_map>
+-#include <vector>
+ #include <utility>
++#pragma push_macro("__glibcxx_assert")
++#define __glibcxx_assert(_Condition)
++#include <vector>
+ #include <mutex>
+ #include <memory>
++#pragma pop_macro("__glibcxx_assert")
+ 
+ #include <c10/util/Exception.h>
+ 
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index dee2a96a01..1b164b882a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -883,7 +883,7 @@ cmake_dependent_option(
+ #
+ if(USE_ROCM)
+   if(USE_FLASH_ATTENTION OR USE_MEM_EFF_ATTENTION)
+-    include(cmake/External/aotriton.cmake)
++#    include(cmake/External/aotriton.cmake)
+   endif()
+ endif()
+ 

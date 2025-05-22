@@ -5,7 +5,6 @@ args=("${@}")
 has_x_hip=0
 compile_cu=0
 ext_args=()
-
 for arg in ${args[@]};
 do
  if [[ $arg =~ \.cu$ ]];
@@ -21,11 +20,10 @@ do
   has_x_hip=1
  fi
 done
-if [[ $has_x_hip != 1 ]] && [[ $compile_cu == 1 ]];
-then
- ext_args=('-x' 'hip')
-fi
-
-#$HIPCLANG_AGENT ${ext_args[@]} ${args[@]}
-$HIPCC_AGENT ${args[@]}
+#if [[ $has_x_hip != 1 ]] && [[ $compile_cu == 1 ]];
+#then
+  $HIPCC_AGENT ${ext_args[@]} ${args[@]}
+#else
+#  $HIPCLANG_AGENT ${ext_args[@]} ${args[@]}
+#fi
 exit $?

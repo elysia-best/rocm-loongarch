@@ -11,3 +11,16 @@ index 18a3c07..41db333 100644
  
  IF(HIP_FOUND)
    set(HAVE_HIP TRUE)
+diff --git a/gloo/types.h b/gloo/types.h
+index df71d54..3a75212 100644
+--- a/gloo/types.h
++++ b/gloo/types.h
+@@ -28,7 +28,7 @@
+ #endif
+ 
+ #include "gloo/common/common.h"
+-
++#include <stdint.h>
+ #ifdef _WIN32
+ #include <BaseTsd.h>
+ typedef SSIZE_T ssize_t;

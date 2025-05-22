@@ -1,23 +1,8 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 7b9e081c8d..bbf8883e84 100644
+index 0222db304a..6c9e202d0f 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -149,10 +149,10 @@ else()
-     set(MIOPEN_DEFAULT_BACKEND "OpenCL")
- endif()
- 
--if(NOT WIN32 AND NOT MIOPEN_WORKAROUND_USE_BOOST_FILESYSTEM)
--    include(CheckCXXLinkerFlag)
--    check_cxx_linker_flag(-lstdc++fs HAS_LIB_STD_FILESYSTEM)
--endif()
-+#if(NOT WIN32 AND NOT MIOPEN_WORKAROUND_USE_BOOST_FILESYSTEM)
-+#    include(CheckCXXLinkerFlag)
-+#    check_cxx_linker_flag(-lstdc++fs HAS_LIB_STD_FILESYSTEM)
-+#endif()
- 
- list(APPEND CMAKE_PREFIX_PATH ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_PREFIX}/llvm ${CMAKE_INSTALL_PREFIX}/hip /opt/rocm /opt/rocm/llvm /opt/rocm/hip)
- 
-@@ -363,16 +363,16 @@ if( MIOPEN_BACKEND STREQUAL "HIP" OR MIOPEN_BACKEND STREQUAL "HIPOC" OR MIOPEN_B
+@@ -364,16 +364,16 @@ if( MIOPEN_BACKEND STREQUAL "HIP" OR MIOPEN_BACKEND STREQUAL "HIPOC" OR MIOPEN_B
      endif()
  
      # hipblaslt
@@ -43,7 +28,7 @@ index 7b9e081c8d..bbf8883e84 100644
  else()
      #CK is only enabled when HIP backend is selected   
      set(MIOPEN_USE_COMPOSABLEKERNEL Off)
-@@ -692,7 +692,7 @@ rocm_create_package(
+@@ -693,7 +693,7 @@ rocm_create_package(
      # DEPENDS rocm-opencl hip-rocclr tinygemm
  )
  
@@ -158,10 +143,10 @@ index 5a48c043a8..cffc2a8acd 100644
      {
          MIOPEN_LOG_W("Incorrect MIOPEN_DEBUG_AMD_ROCM_ENFORCE_MDVERSION = " << val.getValue()
 diff --git a/src/getitem.cpp b/src/getitem.cpp
-index c3b1b0c3bc..0a6b272631 100644
+index 2920708932..336b9bae40 100644
 --- a/src/getitem.cpp
 +++ b/src/getitem.cpp
-@@ -40,7 +40,7 @@ std::size_t GetGetitemWorkspaceSize(Handle& handle,
+@@ -40,7 +40,7 @@ std::size_t GetGetitemWorkspaceSize(const Handle& handle,
                                      const TensorDescriptor* const* indexDescs)
  {
      auto ctx           = ExecutionContext{&handle};
@@ -171,10 +156,10 @@ index c3b1b0c3bc..0a6b272631 100644
      const auto algo    = AlgorithmName{"GetitemBackward"};
      const auto solvers = solver::SolverContainer<solver::getitem::GetitemBackward>{};
 diff --git a/src/graphapi/conv_bias_res_add_activ_forward_executor.cpp b/src/graphapi/conv_bias_res_add_activ_forward_executor.cpp
-index dbbfcd18d5..82e85308dc 100644
+index 36d798e4fb..5b8aaa0505 100644
 --- a/src/graphapi/conv_bias_res_add_activ_forward_executor.cpp
 +++ b/src/graphapi/conv_bias_res_add_activ_forward_executor.cpp
-@@ -49,7 +49,7 @@ std::vector<int> Convert(const std::vector<int64_t>& values)
+@@ -50,7 +50,7 @@ std::vector<int> Convert(const std::vector<int64_t>& values)
  
  ConvolutionDescriptor Convert(const Convolution& conv, int groupCount)
  {
@@ -183,16 +168,3 @@ index dbbfcd18d5..82e85308dc 100644
              conv.getMode(),
              miopenPaddingMode_t::miopenPaddingDefault,
              Convert(conv.getPrePaddings()),
-diff --git a/src/kernels/hip_float8.hpp b/src/kernels/hip_float8.hpp
-index 5bb393b4c7..10a89358f9 100644
---- a/src/kernels/hip_float8.hpp
-+++ b/src/kernels/hip_float8.hpp
-@@ -616,7 +616,7 @@ inline bool isnan(miopen_f8::hip_f8<miopen_f8::hip_f8_type::bf8> x) // NOLINT
- #endif
- 
- // NOLINTBEGIN(cert-dcl58-cpp)
--namespace std {
-+namespace miopen_f8_std {
- 
- template <typename T>
- class numeric_limits;

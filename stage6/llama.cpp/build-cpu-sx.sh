@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "使用ROCm的llvm仅为了简化依赖和测试，如有必要可更换"
-export pkgver=6.3.2
+export pkgver=6.4.0
 export ROCM_HOME=/opt/rocm-$pkgver/
 export ROCM_PATH=$ROCM_HOME
 function fetch(){
@@ -15,7 +15,7 @@ function prepare() {
    -DCMAKE_CXX_COMPILER=/opt/rocm-$pkgver/lib/llvm/bin/clang++ \
    -DCMAKE_BUILD_TYPE=Release \
    -DCMAKE_LINKER_TYPE=LLD  \
-   -DCMAKE_CXX_FLAGS="-I/opt/rocm-${pkgver}/include -stdlib=libc++ -fopenmp" \
+   -DCMAKE_CXX_FLAGS="-I/opt/rocm-${pkgver}/include -fopenmp" \
    -DGGML_LSX=ON \
    -DGGML_LASX=ON \
    -DCMAKE_INSTALL_RPATH="/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib/llvm/lib;/opt/rocm-${pkgver}/lib64" \
