@@ -1,5 +1,5 @@
 #!/bin/bash
-export rocver=6.4.0
+export rocver=6.4.1
 export ROCM_HOME=/opt/rocm-$rocver/
 export ROCM_PATH=$ROCM_HOME
 export ROCM_SOURCE_DIR=$ROCM_HOME

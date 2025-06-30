@@ -1,8 +1,8 @@
 diff --git a/external/llvm-project/clang/lib/Basic/Targets/LoongArch.h b/external/llvm-project/clang/lib/Basic/Targets/LoongArch.h
-index abaa05aa42d4..4be3d7b36a1a 100644
+index 5c34c84ff8d3..91308ade2b55 100644
 --- a/external/llvm-project/clang/lib/Basic/Targets/LoongArch.h
 +++ b/external/llvm-project/clang/lib/Basic/Targets/LoongArch.h
-@@ -54,6 +54,8 @@ public:
+@@ -56,6 +56,8 @@ public:
      SuitableAlign = 128;
      WCharType = SignedInt;
      WIntType = UnsignedInt;
@@ -11,23 +11,11 @@ index abaa05aa42d4..4be3d7b36a1a 100644
    }
  
    bool setCPU(const std::string &Name) override {
-diff --git a/external/llvm-project/clang/lib/CodeGen/BackendUtil.cpp b/external/llvm-project/clang/lib/CodeGen/BackendUtil.cpp
-index 2dbab785658a..928312fe3bb1 100644
---- a/external/llvm-project/clang/lib/CodeGen/BackendUtil.cpp
-+++ b/external/llvm-project/clang/lib/CodeGen/BackendUtil.cpp
-@@ -294,6 +294,7 @@ getCodeModel(const CodeGenOptions &CodeGenOpts) {
-                            .Case("kernel", llvm::CodeModel::Kernel)
-                            .Case("medium", llvm::CodeModel::Medium)
-                            .Case("large", llvm::CodeModel::Large)
-+                           .Case("extreme", llvm::CodeModel::Large)
-                            .Case("default", ~1u)
-                            .Default(~0u);
-   assert(CodeModel != ~0u && "invalid code model!");
 diff --git a/external/llvm-project/llvm/lib/Analysis/ConstantFolding.cpp b/external/llvm-project/llvm/lib/Analysis/ConstantFolding.cpp
-index 031d675c330e..6d652f052fb3 100644
+index 80c1277e6316..a6ab822b99be 100644
 --- a/external/llvm-project/llvm/lib/Analysis/ConstantFolding.cpp
 +++ b/external/llvm-project/llvm/lib/Analysis/ConstantFolding.cpp
-@@ -1876,7 +1876,7 @@ Constant *GetConstantFoldFPValue(double V, Type *Ty) {
+@@ -1898,7 +1898,7 @@ Constant *GetConstantFoldFPValue(double V, Type *Ty) {
  }
  
  #if defined(HAS_IEE754_FLOAT128) && defined(HAS_LOGF128)
@@ -36,7 +24,7 @@ index 031d675c330e..6d652f052fb3 100644
    if (Ty->isFP128Ty())
      return ConstantFP::get(Ty, V);
    llvm_unreachable("Can only constant fold fp128");
-@@ -1922,7 +1922,7 @@ Constant *ConstantFoldFP(double (*NativeFP)(double), const APFloat &V,
+@@ -1944,7 +1944,7 @@ Constant *ConstantFoldFP(double (*NativeFP)(double), const APFloat &V,
  }
  
  #if defined(HAS_IEE754_FLOAT128) && defined(HAS_LOGF128)
@@ -46,103 +34,26 @@ index 031d675c330e..6d652f052fb3 100644
    llvm_fenv_clearexcept();
    float128 Result = NativeFP(V.convertToQuad());
 diff --git a/external/llvm-project/llvm/lib/Target/LoongArch/LoongArchISelLowering.cpp b/external/llvm-project/llvm/lib/Target/LoongArch/LoongArchISelLowering.cpp
-index 96e6f71344a7..de3c35916fb4 100644
+index 2282dc895561..0a899526b689 100644
 --- a/external/llvm-project/llvm/lib/Target/LoongArch/LoongArchISelLowering.cpp
 +++ b/external/llvm-project/llvm/lib/Target/LoongArch/LoongArchISelLowering.cpp
-@@ -345,6 +345,20 @@ LoongArchTargetLowering::LoongArchTargetLowering(const TargetMachine &TM,
-                         VT, Expand);
+@@ -197,6 +197,9 @@ LoongArchTargetLowering::LoongArchTargetLowering(const TargetMachine &TM,
+         setOperationAction(ISD::UINT_TO_FP, MVT::i64, Custom);
+       }
      }
-   }
-+    // Lower f16 conversion operations into library calls
-+  setOperationAction(ISD::FP16_TO_FP,        MVT::f32,   Expand);
-+  setOperationAction(ISD::FP_TO_FP16,        MVT::f32,   Expand);
-+  setOperationAction(ISD::FP16_TO_FP,        MVT::f64,   Expand);
-+  setOperationAction(ISD::FP_TO_FP16,        MVT::f64,   Expand);
-+  setOperationAction(ISD::SPLAT_VECTOR, MVT::f16, Custom);
-+  setTruncStoreAction(MVT::f32, MVT::f16, Expand);
 +
-+  setLoadExtAction(ISD::EXTLOAD, MVT::f32, MVT::f16, Expand);
-+  setLibcallName(RTLIB::FPEXT_F16_F32, "__extendhfsf2");
-+  setLibcallName(RTLIB::FPROUND_F32_F16, "__truncsfhf2");
-+  setLoadExtAction(ISD::EXTLOAD, MVT::f64, MVT::f16, Expand);
-+  setTruncStoreAction(MVT::f64, MVT::f16, Expand);
++    setLibcallName(RTLIB::FPEXT_F16_F32, "__extendhfsf2");
++    setLibcallName(RTLIB::FPROUND_F32_F16, "__truncsfhf2");
+   }
+ 
+   // Set operations for 'D' feature.
+@@ -224,6 +227,9 @@ LoongArchTargetLowering::LoongArchTargetLowering(const TargetMachine &TM,
+     setOperationAction(ISD::FP16_TO_FP, MVT::f64, Expand);
+     setOperationAction(ISD::FP_TO_FP16, MVT::f64, Expand);
+ 
 +
- 
-   // Set DAG combine for LA32 and LA64.
- 
-diff --git a/external/llvm-project/llvm/lib/Target/X86/MCTargetDesc/X86MCTargetDesc.h b/external/llvm-project/llvm/lib/Target/X86/MCTargetDesc/X86MCTargetDesc.h
-index e166b68668d9..c0144173e7ef 100644
---- a/external/llvm-project/llvm/lib/Target/X86/MCTargetDesc/X86MCTargetDesc.h
-+++ b/external/llvm-project/llvm/lib/Target/X86/MCTargetDesc/X86MCTargetDesc.h
-@@ -16,6 +16,7 @@
- #include "llvm/ADT/SmallVector.h"
- #include <memory>
- #include <string>
-+#include <cstdint>
- 
- namespace llvm {
- class formatted_raw_ostream;
-diff --git a/external/llvm-project/mlir/include/mlir/Target/SPIRV/Deserialization.h b/external/llvm-project/mlir/include/mlir/Target/SPIRV/Deserialization.h
-index e39258beeaac..1579862a3902 100644
---- a/external/llvm-project/mlir/include/mlir/Target/SPIRV/Deserialization.h
-+++ b/external/llvm-project/mlir/include/mlir/Target/SPIRV/Deserialization.h
-@@ -12,7 +12,7 @@
- 
- #ifndef MLIR_TARGET_SPIRV_DESERIALIZATION_H
- #define MLIR_TARGET_SPIRV_DESERIALIZATION_H
--
-+#include <cstdint>
- #include "mlir/IR/OwningOpRef.h"
- #include "mlir/Support/LLVM.h"
- 
-diff --git a/mlir/lib/Analysis/BufferDependencyAnalysis.cpp b/mlir/lib/Analysis/BufferDependencyAnalysis.cpp
-index eb74f9fb9020..8fa01a53db03 100644
---- a/mlir/lib/Analysis/BufferDependencyAnalysis.cpp
-+++ b/mlir/lib/Analysis/BufferDependencyAnalysis.cpp
-@@ -40,7 +40,7 @@ void findAllUsers(Operation *root, llvm::SmallVectorImpl<OpOperand *> &users) {
- 
- // Finds whether a given op reads or writes to the memory produced by the parent
- // operation
--enum EffectType { read, write, unknown };
-+enum EffectType { ET_read, ET_write, unknown };
- EffectType getMemoryEffectType(OpOperand *use) {
-   if (auto memoryEffect = dyn_cast<MemoryEffectOpInterface>(use->getOwner())) {
-     SmallVector<SideEffects::EffectInstance<MemoryEffects::Effect>, 4> effects;
-@@ -54,9 +54,9 @@ EffectType getMemoryEffectType(OpOperand *use) {
-       hasRead |= isa<MemoryEffects::Read>(effect.getEffect());
-     }
-     if (hasWrite)
--      return EffectType::write;
-+      return EffectType::ET_write;
-     if (hasRead)
--      return EffectType::read;
-+      return EffectType::ET_read;
++    setOperationAction(ISD::SPLAT_VECTOR, MVT::f16, Custom);
++
+     if (Subtarget.is64Bit())
+       setOperationAction(ISD::FRINT, MVT::f64, Legal);
    }
-   return EffectType::unknown;
- }
-@@ -74,10 +74,10 @@ SearchResults findReadersAndWriters(memref::AllocOp allocOp) {
-   findAllUsers(allocOp, users);
-   for (OpOperand *user : users) {
-     EffectType effectType = getMemoryEffectType(user);
--    if (effectType == EffectType::read) {
-+    if (effectType == EffectType::ET_read) {
-       results.readers.push_back(user);
-     }
--    if (effectType == EffectType::write) {
-+    if (effectType == EffectType::ET_write) {
-       results.writers.push_back(user);
-     }
-   }
-diff --git a/mlir/tools/xmir-runner/CMakeLists.txt b/mlir/tools/xmir-runner/CMakeLists.txt
-index f71c9f2a2ce6..3e164b4a7f70 100644
---- a/mlir/tools/xmir-runner/CMakeLists.txt
-+++ b/mlir/tools/xmir-runner/CMakeLists.txt
-@@ -13,7 +13,7 @@ if(MLIR_ENABLE_ROCM_RUNNER)
-     ${rocmlir_dialect_libs}
-     ${rocmlir_conversion_libs}
-     ${rocmlir_test_libs}
--    LLVMX86AsmParser
-+    LLVMLoongArchAsmParser
-     MLIRMHAL
-     MLIRMHALTransforms
-     MLIRMHALPipeline

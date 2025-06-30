@@ -1,5 +1,5 @@
 #!/bin/bash
-export pkgver=6.4.0
+export pkgver=6.4.1
 export ROCM_HOME=/opt/rocm-$pkgver/
 export ROCM_PATH=$ROCM_HOME
 export PATH=$ROCM_HOME/bin:$ROCM_HOME/lib/llvm/bin:$PATH
@@ -18,8 +18,8 @@ function prepare() {
   fi
   EXT_CFLAGS="-fPIC -I/opt/rocm-${pkgver}/include  -L/opt/rocm-${pkgver}/lib -L/opt/rocm-${pkgver}/lib64"
   cmake ../llama.cpp \
-   -DCMAKE_C_COMPILER=/opt/rocm-$pkgver/lib/llvm/bin/clang \
-   -DCMAKE_CXX_COMPILER=/opt/rocm-$pkgver/lib/llvm/bin/clang++ \
+   -DCMAKE_C_COMPILER=clang \
+   -DCMAKE_CXX_COMPILER=clang++ \
    -DCMAKE_HIP_COMPILER=$PWD/../hipclang-agent.sh \
    -DCMAKE_BUILD_TYPE=Release \
    -DGGML_HIP=ON \

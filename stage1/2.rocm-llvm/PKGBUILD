@@ -1,7 +1,7 @@
 pkgbase='rocm-llvm'
 pkgname=('rocm-llvm')
-pkgver=6.4.0
-pkgrel=640000
+pkgver=6.4.1
+pkgrel=641000
 pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
 arch=('loong64' 'x86_64' 'riscv64')
 license=('Apache')
@@ -28,7 +28,7 @@ prepare() {
   cat  > toolchain.cmake << EOF
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_INSTALL_PREFIX "/opt/rocm-${pkgver}/lib/llvm")
-set(CMAKE_INSTALL_RPATH "/opt/rocm-${pkgver}/lib/llvm/lib")
+set(CMAKE_INSTALL_RPATH "/opt/rocm-${pkgver}/lib/llvm/lib;/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64")
 set(CMAKE_C_FLAGS "$EXT_CFLAGS")
 set(CMAKE_CXX_FLAGS "$EXT_CFLAGS")
 EOF
@@ -47,10 +47,12 @@ EOF
   -DLIBCXX_USE_COMPILER_RT=ON \
   -DLLVM_ENABLE_PIC=ON \
   -DLLVM_ENABLE_ASSERTIONS=1 \
-  -DLLVM_TARGETS_TO_BUILD='host;AMDGPU;NVPTX' \
-  -DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;clang-tools-extra;mlir;openmp' \
+  -DLLVM_TARGETS_TO_BUILD='host;AMDGPU' \
+  -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD="SPIRV" \
+  -DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;clang-tools-extra;mlir;openmp;flang' \
   -DLLVM_ENABLE_RUNTIMES='libcxx;libcxxabi;libunwind' \
   -G "Ninja" \
+  -DCMAKE_SKIP_RPATH=OFF \
   -S ../llvm-project/llvm/
 }
 build() {
@@ -70,4 +72,12 @@ echo
 package() {
   cd build
   cmake --install . --prefix "$pkgdir"/opt/rocm-${pkgver}/lib/llvm
+  ln -s /opt/rocm-${pkgver}/lib/llvm "$pkgdir"/opt/rocm-${pkgver}/llvm
+  mkdir "$pkgdir"/opt/rocm-${pkgver}/bin/
+  ln -s /opt/rocm-${pkgver}/lib/llvm/bin/amdclang++ "$pkgdir"/opt/rocm-${pkgver}/bin/amdclang++
+  ln -s /opt/rocm-${pkgver}/lib/llvm/bin/amdclang "$pkgdir"/opt/rocm-${pkgver}/bin/amdclang
+  ln -s /opt/rocm-${pkgver}/lib/llvm/bin/clang++ "$pkgdir"/opt/rocm-${pkgver}/bin/clang++
+  ln -s /opt/rocm-${pkgver}/lib/llvm/bin/clang "$pkgdir"/opt/rocm-${pkgver}/bin/clang
+  ln -s /opt/rocm-${pkgver}/lib/llvm/bin/llc "$pkgdir"/opt/rocm-${pkgver}/bin/llc
+
 }

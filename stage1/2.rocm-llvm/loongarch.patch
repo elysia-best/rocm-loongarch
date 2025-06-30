@@ -1,16 +1,3 @@
-diff --git a/amd/hipcc/src/hipBin_amd.h b/amd/hipcc/src/hipBin_amd.h
-index a37c07836620..cc8bbf4dec76 100644
---- a/amd/hipcc/src/hipBin_amd.h
-+++ b/amd/hipcc/src/hipBin_amd.h
-@@ -209,7 +209,7 @@ void HipBinAmd::constructCompilerPath() {
-     } else {
-       compilerPath = getRoccmPath();
-       hipClangPath = compilerPath;
--      hipClangPath /= "lib/llvm/bin";
-+      hipClangPath /= "bin";
-     }
- 
-     compilerPath = hipClangPath.string();
 diff --git a/clang/include/clang/Basic/Builtins.td b/clang/include/clang/Basic/Builtins.td
 index 4133f6ff40cf..07c85801d51d 100644
 --- a/clang/include/clang/Basic/Builtins.td
@@ -54,20 +41,24 @@ index 98928b3c22d7..b7ac2b4810ec 100644
        return false;
      break;
 diff --git a/clang/lib/Basic/Targets/LoongArch.h b/clang/lib/Basic/Targets/LoongArch.h
-index 5fc223483951..c8268dc91e5a 100644
+index 5fc223483951..976f4c3b4aaa 100644
 --- a/clang/lib/Basic/Targets/LoongArch.h
 +++ b/clang/lib/Basic/Targets/LoongArch.h
-@@ -44,6 +44,8 @@ public:
+@@ -44,6 +44,12 @@ public:
      SuitableAlign = 128;
      WCharType = SignedInt;
      WIntType = UnsignedInt;
++
 +    HasFloat128 = true;
 +    HasFloat16 = true;
++    HasBFloat16 = true;
++    BFloat16Format = &llvm::APFloat::BFloat();
++    BFloat16Width = BFloat16Align = 16;
    }
  
    bool setCPU(const std::string &Name) override {
 diff --git a/clang/tools/clang-linker-wrapper/ClangLinkerWrapper.cpp b/clang/tools/clang-linker-wrapper/ClangLinkerWrapper.cpp
-index 2164bb330211..60f17295eeff 100644
+index 66d7569ee9ae..ef55a3fef4a1 100644
 --- a/clang/tools/clang-linker-wrapper/ClangLinkerWrapper.cpp
 +++ b/clang/tools/clang-linker-wrapper/ClangLinkerWrapper.cpp
 @@ -613,6 +613,7 @@ Expected<StringRef> linkDevice(ArrayRef<StringRef> InputFiles,
@@ -91,45 +82,70 @@ index 09676d792dfe..4757855fdf29 100644
  namespace llvm {
  
 diff --git a/llvm/lib/Target/AMDGPU/MCTargetDesc/AMDGPUMCTargetDesc.h b/llvm/lib/Target/AMDGPU/MCTargetDesc/AMDGPUMCTargetDesc.h
-index 3ef00f75735b..40939eb503bf 100644
+index 3ef00f75735b..5712741bec7a 100644
 --- a/llvm/lib/Target/AMDGPU/MCTargetDesc/AMDGPUMCTargetDesc.h
 +++ b/llvm/lib/Target/AMDGPU/MCTargetDesc/AMDGPUMCTargetDesc.h
-@@ -16,7 +16,7 @@
+@@ -16,6 +16,7 @@
  #define LLVM_LIB_TARGET_AMDGPU_MCTARGETDESC_AMDGPUMCTARGETDESC_H
  
  #include <memory>
--
 +#include <cstdint>
+ 
  namespace llvm {
  class Target;
- class MCAsmBackend;
+diff --git a/llvm/lib/Target/LoongArch/LoongArchISelLowering.cpp b/llvm/lib/Target/LoongArch/LoongArchISelLowering.cpp
+index 496f126b7173..52369cd72cf0 100644
+--- a/llvm/lib/Target/LoongArch/LoongArchISelLowering.cpp
++++ b/llvm/lib/Target/LoongArch/LoongArchISelLowering.cpp
+@@ -1927,7 +1927,22 @@ void LoongArchTargetLowering::ReplaceNodeResults(
+     SDValue Src = N->getOperand(0);
+     EVT FVT = EVT::getFloatingPointVT(N->getValueSizeInBits(0));
+     if (getTypeAction(*DAG.getContext(), Src.getValueType()) !=
+-        TargetLowering::TypeSoftenFloat) {
++        TargetLowering::TypeSoftenFloat &&  Src.getValueType() == MVT::f16 ) {
++
++      RTLIB::Libcall LC;
++      LC = RTLIB::getFPTOSINT(MVT::f32, VT);
++      MakeLibCallOptions CallOptions;
++      EVT OpVT = MVT::f32;
++      CallOptions.setTypeListBeforeSoften(OpVT, VT, true);
++      SDValue Chain = SDValue();
++      SDValue Result;
++      std::tie(Result, Chain) =
++          makeLibCall(DAG, LC, VT, Src, CallOptions, DL, Chain);
++      Results.push_back(Result);
++      return;
++    } else
++    if (getTypeAction(*DAG.getContext(), Src.getValueType()) !=
++        TargetLowering::TypeSoftenFloat &&  Src.getValueType() != MVT::f16 ) {
+       SDValue Dst = DAG.getNode(LoongArchISD::FTINT, DL, FVT, Src);
+       Results.push_back(DAG.getNode(ISD::BITCAST, DL, VT, Dst));
+       return;
 diff --git a/llvm/lib/Target/LoongArch/LoongArchTargetMachine.cpp b/llvm/lib/Target/LoongArch/LoongArchTargetMachine.cpp
-index e83fc08696ae..23497d5c6568 100644
+index e83fc08696ae..e1878932e553 100644
 --- a/llvm/lib/Target/LoongArch/LoongArchTargetMachine.cpp
 +++ b/llvm/lib/Target/LoongArch/LoongArchTargetMachine.cpp
-@@ -68,8 +68,7 @@ static CodeModel::Model
+@@ -68,7 +68,7 @@ static CodeModel::Model
  getEffectiveLoongArchCodeModel(const Triple &TT,
                                 std::optional<CodeModel::Model> CM) {
    if (!CM)
 -    return CodeModel::Small;
--
 +    return TT.isArch64Bit() ? CodeModel::Medium : CodeModel::Small;
+ 
    switch (*CM) {
    case CodeModel::Small:
-     return *CM;
 diff --git a/mlir/include/mlir/Dialect/Affine/IR/ValueBoundsOpInterfaceImpl.h b/mlir/include/mlir/Dialect/Affine/IR/ValueBoundsOpInterfaceImpl.h
-index 451c466fa0c9..2e06a1b32e4b 100644
+index 451c466fa0c9..642e99d963ef 100644
 --- a/mlir/include/mlir/Dialect/Affine/IR/ValueBoundsOpInterfaceImpl.h
 +++ b/mlir/include/mlir/Dialect/Affine/IR/ValueBoundsOpInterfaceImpl.h
-@@ -10,7 +10,7 @@
+@@ -10,6 +10,7 @@
  #define MLIR_DIALECT_AFFINE_IR_VALUEBOUNDSOPINTERFACEIMPL_H
  
  #include "mlir/Support/LLVM.h"
--
 +#include <cstdint>
+ 
  namespace mlir {
  class DialectRegistry;
- class Value;
 diff --git a/mlir/include/mlir/Target/SPIRV/Deserialization.h b/mlir/include/mlir/Target/SPIRV/Deserialization.h
 index e39258beeaac..a346a7fd1e5f 100644
 --- a/mlir/include/mlir/Target/SPIRV/Deserialization.h
@@ -143,10 +159,10 @@ index e39258beeaac..a346a7fd1e5f 100644
  namespace mlir {
  class MLIRContext;
 diff --git a/openmp/libomptarget/libm/CMakeLists.txt b/openmp/libomptarget/libm/CMakeLists.txt
-index e16ce67c527e..658afa26b894 100644
+index e16ce67c527e..41f889072bdb 100644
 --- a/openmp/libomptarget/libm/CMakeLists.txt
 +++ b/openmp/libomptarget/libm/CMakeLists.txt
-@@ -51,8 +51,13 @@ foreach(mcpu ${amdgpu_mcpus})
+@@ -51,6 +51,9 @@ foreach(mcpu ${amdgpu_mcpus})
    if(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "ppc64le")
      set(cpu_target powerpc64le-linux-gnu)
    endif()
@@ -154,9 +170,5 @@ index e16ce67c527e..658afa26b894 100644
 +    set(cpu_target loongarch64-linux-gnu)
 +  endif()
    # Need omp.h from the build directory
-+  separate_arguments(CXX_FLAGS UNIX_COMMAND ${CMAKE_CXX_FLAGS})
    set(omp_common_args
-+     ${CXX_FLAGS}
      -c 
-     -I ${CMAKE_BINARY_DIR}${_xdir}/runtime/src
-     -emit-llvm

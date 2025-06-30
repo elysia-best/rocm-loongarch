@@ -1,7 +1,7 @@
 pkgbase='rocm-hipBLASLt'
 pkgname=('rocm-hipBLASLt')
-pkgver=6.4.0
-pkgrel=640000
+pkgver=6.4.1
+pkgrel=641000
 pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
 arch=('loong64' 'x86_64' 'riscv64')
 license=('MIT')
@@ -10,9 +10,8 @@ url="https://github.com/ROCm/hipBLASLt.git"
 source=(
     "git+https://github.com/ROCm/hipBLASLt.git#tag=rocm-$pkgver"
     'lt.patch'
-    'https://github.com/ROCm/hipBLASLt/pull/1516.patch'
 )
-b2sums=('SKIP' 'SKIP' 'SKIP')
+b2sums=('SKIP' 'SKIP')
 depends=("rocm-clr=${pkgver}" "rocm-hipBLAS-common=${pkgver}")
 export PATH=$PWD/src/build/virtualenv/bin:/opt/rocm-${pkgver}/bin:/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
 export ROCM_PATH=/opt/rocm-${pkgver}/
@@ -20,7 +19,6 @@ export ROCM_PATH=/opt/rocm-${pkgver}/
 prepare() {
   cd hipBLASLt
     git apply ../lt.patch
-    git apply ../1516.patch
   cd ..
   mkdir build || true
   if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then 
@@ -47,11 +45,12 @@ EOF
    -DROCM_PATH=/opt/rocm-${pkgver} \
    -DCMAKE_PREFIX_PATH="/opt/rocm-${pkgver}/;/usr" \
    -DCMAKE_INSTALL_PREFIX=/opt/rocm-${pkgver} \
-   -DVIRTUALENV_PYTHON_EXE=/usr/bin/python3.12 \
    -DBUILD_CLIENTS_SAMPLES=ON \
    -DBUILD_CLIENTS_TESTS=OFF \
-   -DBUILD_CLIENTS_BENCHMARKS=OFF \
+   -DBUILD_CLIENTS_BENCHMARKS=ON \
    -DCMAKE_TOOLCHAIN_FILE=$PWD/../toolchain.cmake \
+   -DTensile_ENABLE_MARKER=ON \
+   -DTensile_EXPERIMENTAL=ON \
    ${targetSet[@]} \
   -G "Unix Makefiles"
 }
@@ -59,7 +58,6 @@ build() {
   mkdir build || true
   cd build
   make -j$(nproc)
-  make hipblaslt-common
 }
 
 check() {

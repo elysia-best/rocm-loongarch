@@ -162,7 +162,7 @@ else ifeq ($(BACKEND),hip)
     -include make.check-hip
 endif
 
-LIB += -Wl,--enable-new-dtags -Wl,--rpath,/opt/rocm-6.4.0/lib -Wl,--rpath,/opt/rocm-6.4.0/lib64 -Wl,--rpath,/opt/rocm-6.4.0/magma/lib
+LIB += -Wl,--enable-new-dtags -Wl,--rpath,/opt/rocm-6.4.1/lib -Wl,--rpath,/opt/rocm-6.4.1/lib64 -Wl,--rpath,/opt/rocm-6.4.1/magma/lib
 LIB += $(EXT_CFLAGS)
 DEVCCFLAGS += $(EXT_CFLAGS)
 CXXFLAGS += $(EXT_CFLAGS)
