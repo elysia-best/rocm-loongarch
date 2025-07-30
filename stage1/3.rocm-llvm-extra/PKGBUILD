@@ -1,7 +1,7 @@
 pkgbase='rocm-llvm-extra'
 pkgname=('rocm-llvm-extra')
-pkgver=6.4.1
-pkgrel=641000
+pkgver=6.4.2
+pkgrel=642000
 pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
 arch=('loong64' 'x86_64' 'riscv64')
 license=('Apache')
@@ -17,7 +17,7 @@ prepare() {
   ROCM_PATH=/opt/rocm-${pkgver}
   CXXFLAGS=""
   cat  > toolchain.cmake << EOF
-set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 set(CMAKE_C_FLAGS "$CXXFLAGS")
 set(CMAKE_CXX_FLAGS "$CXXFLAGS")
 set(CMAKE_BUILD_RPATH "/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64;/opt/rocm-${pkgver}/lib/llvm/lib")
@@ -40,13 +40,6 @@ EOF
        -DCMAKE_TOOLCHAIN_FILE=$PWD/../../toolchain.cmake \
        -DCMAKE_INSTALL_PREFIX=/opt/rocm-${pkgver}/ 
     cd ..
-#    mkdir hipcc || true
-#    cd hipcc
-#      cmake $PWD/../../llvm-project/amd/hipcc/ \
-#       -G Ninja \
-#       -DCMAKE_TOOLCHAIN_FILE=$PWD/../../toolchain.cmake \
-#       -DCMAKE_INSTALL_PREFIX=/opt/rocm-${pkgver}/ 
-#    cd ..
   cd ..
 
 }
@@ -58,21 +51,13 @@ build() {
     cd comgr
       ninja
     cd ..
-#    cd hipcc
-#      ninja
-#    cd ..
   cd ..
 }
 
 check() {
-#  cd build
-#  ninja check
-echo
+    echo
 }
 
-#packaging() {
-
-#}
 package() {
   cd build
     cd device-libs
@@ -81,9 +66,6 @@ package() {
     cd comgr
       cmake --install . --prefix "$pkgdir"/opt/rocm-${pkgver}
     cd ..
- #   cd hipcc
- #     cmake --install . --prefix "$pkgdir"/opt/rocm-${pkgver}
- #   cd ..
   cd ..
 }
 

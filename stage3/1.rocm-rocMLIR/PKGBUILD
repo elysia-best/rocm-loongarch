@@ -1,7 +1,7 @@
 pkgbase='rocm-rocMLIR'
 pkgname=('rocm-rocMLIR')
-pkgver=6.4.1
-pkgrel=641000
+pkgver=6.4.2
+pkgrel=642000
 pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
 arch=('loong64' 'x86_64')
 license=('MIT')
@@ -9,7 +9,7 @@ url="https://github.com/ROCm/ROCT-Thunk-Interface.git"
 
 source=(
     "git+https://github.com/ROCm/rocMLIR.git#tag=rocm-$pkgver"
-    "rocMLIR-loongarch.patch"
+    "0001-rocMLIR-FP128-fix-and-LoongArch-support.patch"
 )
 b2sums=('SKIP' 'SKIP')
 depends=(
@@ -20,15 +20,10 @@ PATH=/opt/rocm-${pkgver}/bin:$PATH
 TARGET="AMDGPU"
 prepare() {
   cd rocMLIR
-    git apply ../rocMLIR-loongarch.patch
+    git apply ../0001-rocMLIR-FP128-fix-and-LoongArch-support.patch
   cd ..
   mkdir build || true
   CFLAGS="-fPIC"
-  if [ $CARCH == 'loong64' ];
-  then
-#    CFLAGS="-mcmodel=extreme $CFLAGS"
-    TARGET="LoongArch;$TARGET"
-  fi
 
   cat  > toolchain.cmake << EOF
 set(CMAKE_BUILD_TYPE "Release")
@@ -54,16 +49,11 @@ EOF
 build() {
   mkdir build || true
   cd build
-
-    ninja 
-#  cmake --build . -j $(nproc)
+    ninja
 }
 
 check() {
-#  cd "ROCm-CompilerSupport"
-#  cd build
-#  make ctest
-echo
+    echo
 }
 
 #packaging() {

@@ -1,7 +1,7 @@
 pkgbase='rocm-clr'
 pkgname=('rocm-clr')
-pkgver=6.4.1
-pkgrel=641000
+pkgver=6.4.2
+pkgrel=642000
 pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
 arch=('loong64' 'x86_64' 'riscv64')
 license=('MIT')
@@ -11,11 +11,12 @@ source=(
     "git+https://github.com/ROCm/HIP.git#tag=rocm-$pkgver"
     "git+https://github.com/ROCm/llvm-project.git#tag=rocm-$pkgver"
     "git+https://github.com/ROCm/clr.git#tag=rocm-$pkgver"
-    "clr.patch"
-    "clr-riscv.patch"
-    "hip.patch"
+    "0001-HIPAMD-DISABLE-glibcxx_assert.patch"
+    "0002-support-LoongArch-RISCV.patch"
+    "0003-hip-header-disbale-glibcxx-assert.patch"
+    "0004-rewrite-hip-embed-pch.patch"
 )
-b2sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+b2sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 PATH=/opt/rocm-${pkgver}/bin:/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
 depends=("rocm-llvm=${pkgver}"
 "rocm-cmake=${pkgver}"
@@ -30,18 +31,12 @@ prepare() {
   cd ..
 
   cd clr
-    git apply ../clr.patch
-    if [ $CARCH == 'loong64' ];
-    then
-      sed -i 's!x86_64-unknown-linux-gnu!loongarch64-unknown-linux-gnu!g' hipamd/src/hip_embed_pch.sh
-    fi
-    if [ $CARCH == 'riscv64' ];
-    then
-      git apply ../clr-riscv.patch
-    fi
+    git apply ../0001-HIPAMD-DISABLE-glibcxx_assert.patch
+    git apply ../0002-support-LoongArch-RISCV.patch
+    git apply ../0004-rewrite-hip-embed-pch.patch
   cd ..
   cd HIP
-    git apply ../hip.patch
+    git apply ../0003-hip-header-disbale-glibcxx-assert.patch
   cd ..
   CFLAGS=""
   cat  > toolchain.cmake << EOF
@@ -79,19 +74,7 @@ build() {
 }
 
 check() {
-#  cd "ROCm-CompilerSupport"
-#  cd build
-#  make all
-#  cd hipamd && ctest
-#  cd opencl/khronos/icd && ctest
-#  cd opencl/khronos/icd/test && ctest
-#  cd opencl/khronos/icd/test/log && ctest
-#  cd opencl/khronos/icd/test/driver_stub && ctest
-#  cd opencl/khronos/icd/test/loader_test && ctest
-
-
-
-echo
+    echo
 }
 
 #packaging() {
@@ -100,6 +83,4 @@ echo
 package() {
   cd build
   make DESTDIR="$pkgdir/" install
- # cd $pkgdir/opt/rocm-$pkgver/bin
-#  rm hipcc hipcc.pl hipconfig hipconfig.pl hipvars.pm || true
 }

@@ -58,12 +58,12 @@ index d055b635d..1023ead68 100644
 +++ b/tensilelite/Tensile/Source/lib/CMakeLists.txt
 @@ -96,11 +96,11 @@ if(TENSILE_USE_LLVM OR TENSILE_USE_MSGPACK)
  endif()
- 
+
  if(TENSILE_USE_MSGPACK)
 -    find_package(msgpack REQUIRED)
 +    find_package(msgpack-cxx REQUIRED)
      target_compile_definitions(TensileHost PUBLIC -DTENSILE_MSGPACK=1)
- 
+
 -    if(TARGET msgpackc-cxx)
 -        get_target_property(msgpack_inc msgpackc-cxx INTERFACE_INCLUDE_DIRECTORIES)
 +    if(TARGET msgpack-cxx)

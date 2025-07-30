@@ -1,5 +1,5 @@
 #!/bin/bash
-export pkgver=6.4.0
+export pkgver=6.4.2
 export ROCM_HOME=/opt/rocm-$pkgver/
 export ROCM_PATH=$ROCM_HOME
 export PATH=$ROCM_HOME/bin:$ROCM_HOME/lib/llvm/bin:$PATH

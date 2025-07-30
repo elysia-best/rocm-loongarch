@@ -1,7 +1,7 @@
 pkgbase='rocm-llvm'
 pkgname=('rocm-llvm')
-pkgver=6.4.1
-pkgrel=641000
+pkgver=6.4.2
+pkgrel=642000
 pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
 arch=('loong64' 'x86_64' 'riscv64')
 license=('Apache')
@@ -9,12 +9,18 @@ url="https://github.com/ROCm/llvm-project"
 provides=('rocm-compilersupport' 'rocm-device-libs')
 source=(
     "git+https://github.com/ROCm/llvm-project.git#tag=rocm-$pkgver"
-    "loongarch.patch"
+    "0001-rocm-llvm-c++def.patch"
+    "0002-rocm-llvm-define-nansq.patch"
+    "0003-llvm-fix-arm64-support.patch"
+    "0004-llvm-loongarch64-change-default-code-model.patch"
+    "0005-rocm-llvm-loongarch64-feature-support.patch"
+    "0006-llvm-replace-llvm-mc-to-clang.patch"
+    "0007-llvm-linker-extra.patch"
 )
-b2sums=('SKIP' 'SKIP')
+b2sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 prepare() {
   cd llvm-project
-    git apply ../loongarch.patch
+    git apply ../*.patch
   cd ..
   EXT_CFLAGS="-pipe -fPIC "
 # if use clang19 build
@@ -26,7 +32,7 @@ prepare() {
     EXT_CFLAGS="-mcmodel=extreme $EXT_CFLAGS"
   fi
   cat  > toolchain.cmake << EOF
-set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 set(CMAKE_INSTALL_PREFIX "/opt/rocm-${pkgver}/lib/llvm")
 set(CMAKE_INSTALL_RPATH "/opt/rocm-${pkgver}/lib/llvm/lib;/opt/rocm-${pkgver}/lib;/opt/rocm-${pkgver}/lib64")
 set(CMAKE_C_FLAGS "$EXT_CFLAGS")
@@ -72,12 +78,12 @@ echo
 package() {
   cd build
   cmake --install . --prefix "$pkgdir"/opt/rocm-${pkgver}/lib/llvm
-  ln -s /opt/rocm-${pkgver}/lib/llvm "$pkgdir"/opt/rocm-${pkgver}/llvm
+  ln -s ./lib/llvm "$pkgdir"/opt/rocm-${pkgver}/llvm
   mkdir "$pkgdir"/opt/rocm-${pkgver}/bin/
-  ln -s /opt/rocm-${pkgver}/lib/llvm/bin/amdclang++ "$pkgdir"/opt/rocm-${pkgver}/bin/amdclang++
-  ln -s /opt/rocm-${pkgver}/lib/llvm/bin/amdclang "$pkgdir"/opt/rocm-${pkgver}/bin/amdclang
-  ln -s /opt/rocm-${pkgver}/lib/llvm/bin/clang++ "$pkgdir"/opt/rocm-${pkgver}/bin/clang++
-  ln -s /opt/rocm-${pkgver}/lib/llvm/bin/clang "$pkgdir"/opt/rocm-${pkgver}/bin/clang
-  ln -s /opt/rocm-${pkgver}/lib/llvm/bin/llc "$pkgdir"/opt/rocm-${pkgver}/bin/llc
+  ln -s ../lib/llvm/bin/amdclang++ "$pkgdir"/opt/rocm-${pkgver}/bin/amdclang++
+  ln -s ../lib/llvm/bin/amdclang "$pkgdir"/opt/rocm-${pkgver}/bin/amdclang
+  ln -s ../lib/llvm/bin/clang++ "$pkgdir"/opt/rocm-${pkgver}/bin/clang++
+  ln -s ../lib/llvm/bin/clang "$pkgdir"/opt/rocm-${pkgver}/bin/clang
+  ln -s ../lib/llvm/bin/llc "$pkgdir"/opt/rocm-${pkgver}/bin/llc
 
 }

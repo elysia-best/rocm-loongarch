@@ -1,7 +1,7 @@
 pkgbase='rocm-hipBLAS'
 pkgname=('rocm-hipBLAS')
-pkgver=6.4.1
-pkgrel=641000
+pkgver=6.4.2
+pkgrel=642000
 pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
 arch=('loong64' 'x86_64' 'riscv64')
 license=('MIT')
@@ -18,9 +18,7 @@ depends=(
 )
 PATH=/opt/rocm-${pkgver}/bin:$PATH
 prepare() {
-#  sed -i '32d' hipBLAS/test/CMakeLists.txt
-#  sed -i '32i find_package( HIP CONFIG REQUIRED )' hipBLAS/test/CMakeLists.txt
-  if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then 
+  if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then
     targetSet=( -DGPU_TARGETS=$GPU_TARGETS )
   else
     targetSet=( )
@@ -53,9 +51,6 @@ build() {
 }
 
 check() {
-#  cd "ROCm-CompilerSupport"
-#  cd build
-#  make ctest
 echo
 }
 

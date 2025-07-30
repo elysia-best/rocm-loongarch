@@ -1,7 +1,7 @@
 pkgbase='rocm-hipBLASLt'
 pkgname=('rocm-hipBLASLt')
-pkgver=6.4.1
-pkgrel=641000
+pkgver=6.4.2
+pkgrel=642000
 pkgdesc="rocm-core is a utility which can be used to get ROCm release version."
 arch=('loong64' 'x86_64' 'riscv64')
 license=('MIT')
@@ -9,16 +9,17 @@ url="https://github.com/ROCm/hipBLASLt.git"
 
 source=(
     "git+https://github.com/ROCm/hipBLASLt.git#tag=rocm-$pkgver"
-    'lt.patch'
+    "0001-hipblaslt-support-other-arch.patch"
+    "0002-hipblaslt-6.4.1-upstream-clang-fix-gfx120x-failed.patch"
 )
-b2sums=('SKIP' 'SKIP')
+b2sums=('SKIP' 'SKIP' 'SKIP')
 depends=("rocm-clr=${pkgver}" "rocm-hipBLAS-common=${pkgver}")
 export PATH=$PWD/src/build/virtualenv/bin:/opt/rocm-${pkgver}/bin:/opt/rocm-${pkgver}/lib/llvm/bin:$PATH
 export ROCM_PATH=/opt/rocm-${pkgver}/
 #export LD_LIBRARY_PATH=$ROCM_PATH/lib64:$LD_LIBRARY_PATH
 prepare() {
   cd hipBLASLt
-    git apply ../lt.patch
+    git apply ../*.patch
   cd ..
   mkdir build || true
   if [ -n $GPU_TARGETS ] && [ $GPU_TARGETS != 'all' ]; then 
@@ -61,15 +62,9 @@ build() {
 }
 
 check() {
-#  cd "ROCm-CompilerSupport"
-#  cd build
-#  make ctest
 echo
 }
 
-#packaging() {
-
-#}
 package() {
   cd build
   make DESTDIR="$pkgdir/" install
