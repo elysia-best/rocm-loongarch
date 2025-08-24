@@ -2,12 +2,37 @@
 
 DEB_PACKAGE_VERSION ?= $(shell dpkg-parsechangelog -S Version)
 UPSTREAM_VERSION := $(shell echo '$(DEB_PACKAGE_VERSION)' | sed -e 's/-[^-]*$$//')
+# Split into components (requires at least major.minor.patch)
+MAJOR := $(word 1, $(subst ., ,$(UPSTREAM_VERSION)))
+MINOR := $(word 2, $(subst ., ,$(UPSTREAM_VERSION)))
+PATCH := $(word 3, $(subst ., ,$(UPSTREAM_VERSION)))
+# Fallback if patch is missing
+PATCH := $(if $(PATCH),$(PATCH),0)
+MINOR := $(if $(MINOR),$(MINOR),0)
 
 %:
 	dh $@
 
-override_dh_auto_configure:
+override_dh_auto_configure: debian/postinst debian/prerm
 	dh_auto_configure -- -DROCM_VERSION=$(UPSTREAM_VERSION) -DCMAKE_INSTALL_PREFIX=/opt/rocm-$(UPSTREAM_VERSION)
 
 override_dh_auto_test:
 	:
+
+override_dh_auto_clean:
+	rm -f debian/postinst
+	rm -f debian/prerm
+	dh_auto_clean
+
+debian/postinst: debian/postinst.in
+	@echo "Generating $@ from $< with version $(UPSTREAM_VERSION)..."
+	@sed -e 's|%PKG_MAJOR_VERSION%|$(MAJOR)|g' \
+	     -e 's|%PKG_MINOR_VERSION%|$(MINOR)|g' \
+	     -e 's|%PKG_PATCH_VERSION%|$(PATCH)|g' \
+	     -e 's|%PKG_FULL_VERSION%|$(UPSTREAM_VERSION)|g' \
+	     $< > $@
+
+debian/prerm: debian/prerm.in
+	@echo "Generating $@ from $< with version $(UPSTREAM_VERSION)..."
+	@sed -e 's|%PKG_FULL_VERSION%|$(UPSTREAM_VERSION)|g' \
+	     $< > $@
