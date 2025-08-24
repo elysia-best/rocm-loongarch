@@ -9,7 +9,7 @@ Maintainer: Elysia <elysia-best@simplelinux.cn.eu.org>
 Build-Depends: debhelper-compat (= 13), cmake
 Rules-Requires-Root: no
 
-Package: rocm-cmake
+Package: rocm-core
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Multi-Arch: foreign

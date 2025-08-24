@@ -1,4 +1,4 @@
-rocm-cmake (6.4.1-1) unstable; urgency=medium
+rocm-core (6.4.1-2) sid; urgency=medium
 
   * New upstream version 6.4.1
 
