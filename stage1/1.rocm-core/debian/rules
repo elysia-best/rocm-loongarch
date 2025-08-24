@@ -1,0 +1,13 @@
+#!/usr/bin/make -f
+
+DEB_PACKAGE_VERSION ?= $(shell dpkg-parsechangelog -S Version)
+UPSTREAM_VERSION := $(shell echo '$(DEB_PACKAGE_VERSION)' | sed -e 's/-[^-]*$$//')
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- -DROCM_VERSION=$(UPSTREAM_VERSION) -DCMAKE_INSTALL_PREFIX=/opt/rocm-$(UPSTREAM_VERSION)
+
+override_dh_auto_test:
+	:

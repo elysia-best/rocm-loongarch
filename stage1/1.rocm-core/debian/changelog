@@ -1,0 +1,5 @@
+rocm-cmake (6.4.1-1) unstable; urgency=medium
+
+  * New upstream version 6.4.1
+
+ -- Elysia <elysia-best@simplelinux.cn.eu.org>  Fri, 15 Aug 2025 15:41:05 -0500

@@ -1,6 +1,5 @@
 *.pkg.tar.zst
 */*/src/
 */*/pkg/
-*/*/*/*
 *.pkg.tar.gz
 nohup.out
