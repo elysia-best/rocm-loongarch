@@ -10,7 +10,7 @@ Build-Depends: debhelper-compat (= 13), cmake
 Rules-Requires-Root: no
 
 Package: rocm-core
-Architecture: all
+Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Multi-Arch: foreign
 Description: Radeon Open Compute (ROCm) Runtime software stack
