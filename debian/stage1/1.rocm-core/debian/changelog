@@ -1,0 +1,5 @@
+rocm-core (6.3.1-1) sid; urgency=medium
+
+  * New upstream version 6.3.1
+
+ -- Elysia <elysia-best@simplelinux.cn.eu.org>  Fri, 15 Aug 2025 15:41:05 -0500
