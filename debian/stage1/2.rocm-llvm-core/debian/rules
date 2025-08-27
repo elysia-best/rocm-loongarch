@@ -1,0 +1,73 @@
+#!/usr/bin/make -f
+
+DEB_PACKAGE_VERSION ?= $(shell dpkg-parsechangelog -S Version)
+UPSTREAM_VERSION := $(shell echo '$(DEB_PACKAGE_VERSION)' | sed -e 's/-[^-]*$$//')
+# Split into components (requires at least major.minor.patch)
+MAJOR := $(word 1, $(subst ., ,$(UPSTREAM_VERSION)))
+MINOR := $(word 2, $(subst ., ,$(UPSTREAM_VERSION)))
+PATCH := $(word 3, $(subst ., ,$(UPSTREAM_VERSION)))
+# Fallback if patch is missing
+PATCH := $(if $(PATCH),$(PATCH),0)
+MINOR := $(if $(MINOR),$(MINOR),0)
+
+# Define LLVM Targets
+LLVM_TARGETS = AMDGPU;NVPTX;
+LLVM_TARGETS += LoongArch;
+LLVM_TARGETS += X86;
+LLVM_TARGETS += RISCV;
+
+# Define extra c-flags
+EXT_CFLAGS := -pipe \
+			  -mcmodel=medium \
+			  -Wno-missing-template-arg-list-after-template-kw
+
+%:
+	dh $@
+
+override_dh_auto_configure: debian/postinst debian/prerm
+	dh_auto_configure -- \
+		-DCMAKE_C_COMPILER=clang \
+		-DCMAKE_CXX_COMPILER=clang++ \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		-DCMAKE_C_FLAGS="$(EXT_CFLAGS)" \
+		-DCMAKE_CXX_FLAGS="$(EXT_CFLAGS)" \
+		-DCMAKE_INSTALL_PREFIX="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm" \
+		-DLLVM_ENABLE_ASSERTIONS=1 \
+		-DLLVM_TARGETS_TO_BUILD="$(LLVM_TARGETS)" \
+		-DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind" \
+		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
+		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
+		-DPROJECT_VERSION_MAJOR=6 \
+		-DPROJECT_VERSION_MINOR=3 \
+		-DPROJECT_VERSION_PATCH=1 \
+		-DBUILD_SHARED_LIBS=ON \
+		-DLLVM_ENABLE_LIBCXX=ON \
+		-DLIBCXX_ENABLE_SHARED=ON \
+		-DLIBCXX_ENABLE_STATIC=ON \
+		-DLIBCXXABI_ENABLE_SHARED=ON \
+		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
+		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
+		-DRUNTIMES_CMAKE_ARGS="-DCMAKE_INSTALL_RPATH='/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib';-DCMAKE_BUILD_RPATH='/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib';-DBUILD_RPATH_USE_ORIGIN=OFF;-DLLVM_ENABLE_PIC=ON" \
+		-G "Ninja" \
+		-DLLVM_ENABLE_PIC=ON \
+		-S llvm-project/llvm/
+	
+	sed -i "s!-lamdhip64!/opt/rocm-$pkgver/lib64/libamdhip64.so!g" llvm-project/clang/lib/Driver/ToolChains/Linux.cpp
+
+override_dh_auto_test:
+	:
+
+override_dh_auto_clean:
+	rm -f debian/postinst
+	rm -f debian/prerm
+	dh_auto_clean
+
+debian/postinst: debian/postinst.in
+	@echo "Generating $@ from $< with version $(UPSTREAM_VERSION)..."
+	@sed -e 's|%PKG_FULL_VERSION%|$(UPSTREAM_VERSION)|g' \
+	     $< > $@
+
+debian/prerm: debian/prerm.in
+	@echo "Generating $@ from $< with version $(UPSTREAM_VERSION)..."
+	@sed -e 's|%PKG_FULL_VERSION%|$(UPSTREAM_VERSION)|g' \
+	     $< > $@

@@ -1,0 +1,7 @@
+mkdir -p "/opt/rocm-%PKG_FULL_VERSION%/bin"
+ln -s "../lib/llvm/bin/amdclang" "/opt/rocm-%PKG_FULL_VERSION%/bin/amdclang"
+ln -s "../lib/llvm/bin/amdclang++" "/opt/rocm-%PKG_FULL_VERSION%/bin/amdclang++"
+ln -s "../lib/llvm/bin/amdclang-cl" "/opt/rocm-%PKG_FULL_VERSION%/bin/amdclang-cl"
+ln -s "../lib/llvm/bin/amdclang-cpp" "/opt/rocm-%PKG_FULL_VERSION%/bin/amdclang-cpp"
+ln -s "../lib/llvm/bin/amdflang" "/opt/rocm-%PKG_FULL_VERSION%/bin/amdflang"
+ln -s "../lib/llvm/bin/amdlld" "/opt/rocm-%PKG_FULL_VERSION%/bin/amdlld"
