@@ -15,7 +15,9 @@ MINOR := $(if $(MINOR),$(MINOR),0)
 LLVM_TARGETS = AMDGPU;NVPTX;LoongArch;X86;RISCV;
 
 # Define extra c-flags
+# -gdwarf-4: See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1016936 dwz error
 EXT_CFLAGS := -pipe \
+			  -gdwarf-4 \
 			  -mcmodel=medium \
 			  -Wno-missing-template-arg-list-after-template-kw
 
