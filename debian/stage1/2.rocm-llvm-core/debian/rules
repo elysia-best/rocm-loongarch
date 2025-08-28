@@ -19,17 +19,20 @@ EXT_CFLAGS := -pipe \
 			  -mcmodel=medium \
 			  -Wno-missing-template-arg-list-after-template-kw
 
+# Define source path
+LLVM_SOURCE_DIR = $(realpath llvm)
+
 %:
 	CC=clang CXX=clang++ dh $@
 
 override_dh_auto_build:
-	CC=clang CXX=clang++ dh_auto_build -- -S llvm/
+	CC=clang CXX=clang++ dh_auto_build -- -S $(LLVM_SOURCE_DIR)
 
 override_dh_auto_install:
-	CC=clang CXX=clang++ dh_auto_install -- -S llvm/
+	CC=clang CXX=clang++ dh_auto_install -- -S $(LLVM_SOURCE_DIR)
 
 override_dh_auto_configure: debian/postinst debian/prerm
-	CC=clang CXX=clang++ cmake \
+	CC=clang CXX=clang++ dh_auto_configure --buildsystem=cmake+ninja -- \
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -55,7 +58,7 @@ override_dh_auto_configure: debian/postinst debian/prerm
 		-DRUNTIMES_CMAKE_ARGS="-DCMAKE_INSTALL_RPATH='/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib';-DCMAKE_BUILD_RPATH='/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib';-DBUILD_RPATH_USE_ORIGIN=OFF;-DLLVM_ENABLE_PIC=ON" \
 		-G "Ninja" \
 		-DLLVM_ENABLE_PIC=ON \
-		-S llvm/
+		-S $(LLVM_SOURCE_DIR)
 
 override_dh_auto_test:
 	:
