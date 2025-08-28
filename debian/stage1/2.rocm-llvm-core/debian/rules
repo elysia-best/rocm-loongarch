@@ -23,8 +23,6 @@ EXT_CFLAGS := -pipe \
 	CC=clang CXX=clang++ dh $@ \
 		--sourcedir=llvm/
 
-override_dh_auto_build
-
 override_dh_auto_configure: debian/postinst debian/prerm
 	CC=clang CXX=clang++ dh_auto_configure --sourcedir=llvm/ --buildsystem=cmake+ninja -- \
 		-DCMAKE_C_COMPILER=clang \
