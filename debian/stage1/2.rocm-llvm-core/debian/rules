@@ -20,11 +20,13 @@ EXT_CFLAGS := -pipe \
 			  -Wno-missing-template-arg-list-after-template-kw
 
 %:
-	dh $@ \
+	CC=clang CXX=clang++ dh $@ \
 		--sourcedir=llvm/
 
+override_dh_auto_build
+
 override_dh_auto_configure: debian/postinst debian/prerm
-	dh_auto_configure --sourcedir=llvm/ --buildsystem=cmake+ninja -- \
+	CC=clang CXX=clang++ dh_auto_configure --sourcedir=llvm/ --buildsystem=cmake+ninja -- \
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
