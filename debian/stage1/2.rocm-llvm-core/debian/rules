@@ -20,12 +20,15 @@ EXT_CFLAGS := -pipe \
 			  -Wno-missing-template-arg-list-after-template-kw
 
 %:
-	cd llvm
 	CC=clang CXX=clang++ dh $@
-	cd ..
+
+override_dh_auto_build:
+	CC=clang CXX=clang++ dh_auto_build -- -S llvm/
+
+override_dh_auto_install:
+	CC=clang CXX=clang++ dh_auto_install -- S llvm/
 
 override_dh_auto_configure: debian/postinst debian/prerm
-	cd llvm
 	CC=clang CXX=clang++ dh_auto_configure --buildsystem=cmake+ninja -- \
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \
@@ -51,8 +54,8 @@ override_dh_auto_configure: debian/postinst debian/prerm
 		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
 		-DRUNTIMES_CMAKE_ARGS="-DCMAKE_INSTALL_RPATH='/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib';-DCMAKE_BUILD_RPATH='/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib';-DBUILD_RPATH_USE_ORIGIN=OFF;-DLLVM_ENABLE_PIC=ON" \
 		-G "Ninja" \
-		-DLLVM_ENABLE_PIC=ON 
-	cd ..
+		-DLLVM_ENABLE_PIC=ON \
+		-S llvm/
 
 override_dh_auto_test:
 	:
