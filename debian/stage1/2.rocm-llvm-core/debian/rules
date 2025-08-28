@@ -1,5 +1,6 @@
 #!/usr/bin/make -f
 
+DEB_BUILD_GNU_TYPE := $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 DEB_PACKAGE_VERSION ?= $(shell dpkg-parsechangelog -S Version)
 UPSTREAM_VERSION := $(shell echo '$(DEB_PACKAGE_VERSION)' | sed -e 's/-[^-]*$$//')
 # Split into components (requires at least major.minor.patch)
@@ -11,10 +12,7 @@ PATCH := $(if $(PATCH),$(PATCH),0)
 MINOR := $(if $(MINOR),$(MINOR),0)
 
 # Define LLVM Targets
-LLVM_TARGETS = AMDGPU;NVPTX;
-LLVM_TARGETS += LoongArch;
-LLVM_TARGETS += X86;
-LLVM_TARGETS += RISCV;
+LLVM_TARGETS = AMDGPU;NVPTX;LoongArch;X86;RISCV;
 
 # Define extra c-flags
 EXT_CFLAGS := -pipe \
@@ -22,10 +20,11 @@ EXT_CFLAGS := -pipe \
 			  -Wno-missing-template-arg-list-after-template-kw
 
 %:
-	dh $@
+	dh $@ \
+		--sourcedir=llvm/
 
 override_dh_auto_configure: debian/postinst debian/prerm
-	dh_auto_configure -- \
+	dh_auto_configure --sourcedir=llvm/ --buildsystem=cmake+ninja -- \
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -34,6 +33,7 @@ override_dh_auto_configure: debian/postinst debian/prerm
 		-DCMAKE_INSTALL_PREFIX="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm" \
 		-DLLVM_ENABLE_ASSERTIONS=1 \
 		-DLLVM_TARGETS_TO_BUILD="$(LLVM_TARGETS)" \
+		-DLLVM_DEFAULT_TARGET_TRIPLE="$(DEB_BUILD_GNU_TYPE)" \
 		-DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind" \
 		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
@@ -49,10 +49,7 @@ override_dh_auto_configure: debian/postinst debian/prerm
 		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
 		-DRUNTIMES_CMAKE_ARGS="-DCMAKE_INSTALL_RPATH='/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib';-DCMAKE_BUILD_RPATH='/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib';-DBUILD_RPATH_USE_ORIGIN=OFF;-DLLVM_ENABLE_PIC=ON" \
 		-G "Ninja" \
-		-DLLVM_ENABLE_PIC=ON \
-		-S llvm-project/llvm/
-	
-	sed -i "s!-lamdhip64!/opt/rocm-$pkgver/lib64/libamdhip64.so!g" llvm-project/clang/lib/Driver/ToolChains/Linux.cpp
+		-DLLVM_ENABLE_PIC=ON 
 
 override_dh_auto_test:
 	:
