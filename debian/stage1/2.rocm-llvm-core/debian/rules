@@ -25,12 +25,6 @@ LLVM_SOURCE_DIR = $(realpath llvm)
 %:
 	CC=clang CXX=clang++ dh $@
 
-override_dh_auto_build:
-	CC=clang CXX=clang++ dh_auto_build -- -S $(LLVM_SOURCE_DIR)
-
-override_dh_auto_install:
-	CC=clang CXX=clang++ dh_auto_install -- -S $(LLVM_SOURCE_DIR)
-
 override_dh_auto_configure: debian/postinst debian/prerm
 	CC=clang CXX=clang++ dh_auto_configure --buildsystem=cmake+ninja -- \
 		-DCMAKE_C_COMPILER=clang \
