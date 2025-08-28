@@ -15,9 +15,7 @@ MINOR := $(if $(MINOR),$(MINOR),0)
 LLVM_TARGETS = AMDGPU;NVPTX;LoongArch;X86;RISCV;
 
 # Define extra c-flags
-# -gdwarf-4: See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1016936 dwz error
 EXT_CFLAGS := -pipe \
-			  -gdwarf-4 \
 			  -mcmodel=medium \
 			  -Wno-missing-template-arg-list-after-template-kw
 
@@ -28,7 +26,7 @@ LLVM_SOURCE_DIR = $(realpath llvm)
 	CC=clang CXX=clang++ dh $@
 
 override_dh_auto_configure: debian/postinst debian/prerm
-	CC=clang CXX=clang++ dh_auto_configure --buildsystem=cmake+ninja -- \
+	CC=clang CXX=clang++ CFLAGS="$(EXT_CFLAGS)" CXXFLAGS="$(EXT_CFLAGS)" dh_auto_configure --buildsystem=cmake+ninja -- \
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -57,6 +55,9 @@ override_dh_auto_configure: debian/postinst debian/prerm
 		-S $(LLVM_SOURCE_DIR)
 
 override_dh_auto_test:
+	:
+
+override_dh_dwz:
 	:
 
 override_dh_auto_clean:
