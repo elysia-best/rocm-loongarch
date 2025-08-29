@@ -20,12 +20,12 @@ EXT_CFLAGS := -pipe \
 			  -Wno-missing-template-arg-list-after-template-kw
 
 # Define source path
-LLVM_SOURCE_DIR = $(realpath llvm)
+CLANG_SOURCE_DIR = $(realpath clang)
 
 %:
 	CC=clang CXX=clang++ dh $@
 
-override_dh_auto_configure:
+override_dh_auto_configure: debian/postinst debian/prerm
 	CC=clang CXX=clang++ CFLAGS="$(EXT_CFLAGS)" CXXFLAGS="$(EXT_CFLAGS)" dh_auto_configure --buildsystem=cmake+ninja -- \
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \
@@ -36,23 +36,20 @@ override_dh_auto_configure:
 		-DLLVM_ENABLE_ASSERTIONS=1 \
 		-DLLVM_TARGETS_TO_BUILD="$(LLVM_TARGETS)" \
 		-DLLVM_DEFAULT_TARGET_TRIPLE="$(DEB_BUILD_GNU_TYPE)" \
-		-DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind" \
-		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
-		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
+		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib64" \
+		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib64" \
 		-DPROJECT_VERSION_MAJOR=$(MAJOR) \
 		-DPROJECT_VERSION_MINOR=$(MINOR) \
 		-DPROJECT_VERSION_PATCH=$(PATCH) \
-		-DBUILD_SHARED_LIBS=ON \
 		-DLLVM_ENABLE_LIBCXX=ON \
-		-DLIBCXX_ENABLE_SHARED=ON \
-		-DLIBCXX_ENABLE_STATIC=ON \
-		-DLIBCXXABI_ENABLE_SHARED=ON \
-		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
-		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
-		-DRUNTIMES_CMAKE_ARGS="-DCMAKE_INSTALL_RPATH='/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib';-DCMAKE_BUILD_RPATH='/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib';-DBUILD_RPATH_USE_ORIGIN=OFF;-DLLVM_ENABLE_PIC=ON" \
-		-G "Ninja" \
+		-DLLVM_CMAKE_DIR=/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/ \
+		-DLLVM_INCLUDE_TESTS=OFF \
 		-DLLVM_ENABLE_PIC=ON \
-		-S $(LLVM_SOURCE_DIR)
+		-DCLANG_BUILD_TOOLS=ON \
+		-DCLANG_ENABLE_AMDCLANG=ON \
+		-DCLANG_LINK_FLANG=ON \
+		-G "Ninja" \
+		-S $(CLANG_SOURCE_DIR)
 
 override_dh_auto_test:
 	:
@@ -64,3 +61,13 @@ override_dh_auto_clean:
 	rm -f debian/postinst
 	rm -f debian/prerm
 	dh_auto_clean
+
+debian/postinst: debian/postinst.in
+	@echo "Generating $@ from $< with version $(UPSTREAM_VERSION)..."
+	@sed -e 's|%PKG_FULL_VERSION%|$(UPSTREAM_VERSION)|g' \
+	     $< > $@
+
+debian/prerm: debian/prerm.in
+	@echo "Generating $@ from $< with version $(UPSTREAM_VERSION)..."
+	@sed -e 's|%PKG_FULL_VERSION%|$(UPSTREAM_VERSION)|g' \
+	     $< > $@

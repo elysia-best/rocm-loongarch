@@ -1,4 +1,4 @@
-Source: rocm-llvm-core
+Source: rocm-llvm
 Section: devel
 Homepage: https://github.com/ROCm/llvm-project
 Priority: optional
