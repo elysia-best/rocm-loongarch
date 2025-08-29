@@ -6,7 +6,7 @@ Standards-Version: 4.7.2
 Vcs-Git: https://github.com/loongarch-moe/rocm-loongarch.git
 Vcs-Browser: https://github.com/loongarch-moe/rocm-loongarch
 Maintainer: Elysia <elysia-best@simplelinux.cn.eu.org>
-Build-Depends: debhelper-compat (= 13), cmake, clang, ninja-build, libedit-dev
+Build-Depends: debhelper-compat (= 13), cmake, clang, ninja-build, libedit-dev, python3
 Rules-Requires-Root: no
 
 Package: rocm-llvm-core
