@@ -1,0 +1,56 @@
+#!/usr/bin/make -f
+
+DEB_BUILD_GNU_TYPE := $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+DEB_PACKAGE_VERSION ?= $(shell dpkg-parsechangelog -S Version)
+UPSTREAM_VERSION := $(shell echo '$(DEB_PACKAGE_VERSION)' | sed -e 's/-[^-]*$$//')
+# Split into components (requires at least major.minor.patch)
+MAJOR := $(word 1, $(subst ., ,$(UPSTREAM_VERSION)))
+MINOR := $(word 2, $(subst ., ,$(UPSTREAM_VERSION)))
+PATCH := $(word 3, $(subst ., ,$(UPSTREAM_VERSION)))
+# Fallback if patch is missing
+PATCH := $(if $(PATCH),$(PATCH),0)
+MINOR := $(if $(MINOR),$(MINOR),0)
+
+# Define LLVM Targets
+LLVM_TARGETS = AMDGPU;NVPTX;LoongArch;X86;RISCV;
+
+# Define extra c-flags
+EXT_CFLAGS := -pipe \
+			  -mcmodel=medium \
+			  -Wno-missing-template-arg-list-after-template-kw
+
+# Define source path
+CLANG_SOURCE_DIR = $(realpath compiler-rt)
+
+# Define LLVM Version. Should align with the version of rocm-llvm-clang
+LLVM_VERSION = 18
+
+%:
+	CC=clang CXX=clang++ dh $@
+
+override_dh_auto_configure:
+	CC=clang CXX=clang++ CFLAGS="$(EXT_CFLAGS)" CXXFLAGS="$(EXT_CFLAGS)" dh_auto_configure --buildsystem=cmake+ninja -- \
+		-DCMAKE_C_COMPILER=clang \
+		-DCMAKE_CXX_COMPILER=clang++ \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		-DCMAKE_C_FLAGS="$(EXT_CFLAGS)" \
+		-DCMAKE_CXX_FLAGS="$(EXT_CFLAGS)" \
+		-DCMAKE_INSTALL_PREFIX="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib/clang/$(LLVM_VERSION)/" \
+		-DLLVM_ENABLE_ASSERTIONS=1 \
+		-DLLVM_TARGETS_TO_BUILD="$(LLVM_TARGETS)" \
+		-DLLVM_DEFAULT_TARGET_TRIPLE="$(DEB_BUILD_GNU_TYPE)" \
+		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib64" \
+		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib64" \
+		-DPROJECT_VERSION_MAJOR=$(MAJOR) \
+		-DPROJECT_VERSION_MINOR=$(MINOR) \
+		-DPROJECT_VERSION_PATCH=$(PATCH) \
+		-DLLVM_CMAKE_DIR=/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/ \
+		-G "Ninja" \
+		-S $(CLANG_SOURCE_DIR)
+
+override_dh_auto_test:
+	:
+
+override_dh_dwz:
+	:
+

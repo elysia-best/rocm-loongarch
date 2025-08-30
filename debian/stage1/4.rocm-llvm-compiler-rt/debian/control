@@ -1,0 +1,18 @@
+Source: rocm-llvm-compiler-rt
+Section: devel
+Homepage: https://github.com/ROCm/llvm-project
+Priority: optional
+Standards-Version: 4.7.2
+Vcs-Git: https://github.com/loongarch-moe/rocm-loongarch.git
+Vcs-Browser: https://github.com/loongarch-moe/rocm-loongarch
+Maintainer: Elysia <elysia-best@simplelinux.cn.eu.org>
+Build-Depends: debhelper-compat (= 13), cmake, clang, ninja-build, libedit-dev, rocm-core, rocm-llvm-core, python3
+Rules-Requires-Root: no
+
+Package: rocm-llvm-compiler-rt
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: gcc, g++, gcc-multilib, g++-multilib, rocm-device-libs
+Multi-Arch: foreign
+Description: ROCm core compiler
+ ROCm core compiler based on LLVM
