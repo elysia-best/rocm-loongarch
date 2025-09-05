@@ -1,0 +1,18 @@
+Source: rocm-llvm-extra
+Section: devel
+Homepage: https://github.com/ROCm/llvm-project
+Priority: optional
+Standards-Version: 4.7.2
+Vcs-Git: https://github.com/loongarch-moe/rocm-loongarch.git
+Vcs-Browser: https://github.com/loongarch-moe/rocm-loongarch
+Maintainer: Elysia <elysia-best@simplelinux.cn.eu.org>
+Build-Depends: debhelper-compat (= 13), cmake, clang, ninja-build, libedit-dev, rocm-core, rocm-llvm-core, rocm-llvm-clang, python3
+Rules-Requires-Root: no
+
+Package: rocm-llvm-extra
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}
+Provides: comgr
+Multi-Arch: foreign, hipcc, hip-dev, rocm-device-libs
+Description: Extra components for ROCm.
+ It includes device-libs, comgr and hipcc.
