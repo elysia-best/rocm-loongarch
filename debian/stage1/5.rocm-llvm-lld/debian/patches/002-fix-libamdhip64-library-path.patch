@@ -1,0 +1,14 @@
+This patch fixes the search path when building clang
+Index: rocm-llvm-clang_6.3.1/clang/lib/Driver/ToolChains/Linux.cpp
+===================================================================
+--- rocm-llvm-clang_6.3.1.orig/clang/lib/Driver/ToolChains/Linux.cpp	2024-12-10 01:47:16.000000000 +0800
++++ rocm-llvm-clang_6.3.1/clang/lib/Driver/ToolChains/Linux.cpp	2025-08-29 22:18:36.394431469 +0800
+@@ -969,7 +969,7 @@
+     CmdArgs.append(
+         {"-rpath", Args.MakeArgString(RocmInstallation->getLibPath())});
+ 
+-  CmdArgs.push_back("-lamdhip64");
++  CmdArgs.push_back("/opt/rocm/lib64/libamdhip64.so");
+ }
+ 
+ void Linux::AddIAMCUIncludeArgs(const ArgList &DriverArgs,

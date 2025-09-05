@@ -1,0 +1,816 @@
+From 51e91b64d0deb6a743861c2a0fba84865250036e Mon Sep 17 00:00:00 2001
+From: itrofimow <i.trofimow@yandex.ru>
+Date: Mon, 22 Jan 2024 19:12:41 +0400
+Subject: [PATCH] [libc++abi] Implement __cxa_init_primary_exception and use it
+ to optimize std::make_exception_ptr (#65534)
+
+This patch implements __cxa_init_primary_exception, an extension to the
+Itanium C++ ABI. This extension is already present in both libsupc++ and
+libcxxrt. This patch also starts making use of this function in
+std::make_exception_ptr: instead of going through a full throw/catch
+cycle, we are now able to initialize an exception directly, thus making
+std::make_exception_ptr around 30x faster.
+---
+ libcxx/benchmarks/CMakeLists.txt              |  1 +
+ libcxx/benchmarks/exception_ptr.bench.cpp     | 19 +++++++
+ libcxx/docs/BuildingLibcxx.rst                |  3 ++
+ libcxx/include/__availability                 | 25 ++++++++--
+ libcxx/include/__exception/exception_ptr.h    | 50 +++++++++++++++++++
+ libcxx/include/new                            |  1 -
+ libcxx/include/typeinfo                       |  1 -
+ ...bcxxabi.v1.stable.exceptions.nonew.abilist |  3 ++
+ ...bcxxabi.v1.stable.exceptions.nonew.abilist |  2 +
+ ...bcxxabi.v1.stable.exceptions.nonew.abilist |  2 +
+ ...bcxxabi.v1.stable.exceptions.nonew.abilist |  2 +
+ ...bcxxabi.v1.stable.exceptions.nonew.abilist |  3 ++
+ ...bcxxabi.v1.stable.exceptions.nonew.abilist |  2 +
+ ...bcxxabi.v1.stable.exceptions.nonew.abilist |  2 +
+ ...bcxxabi.v1.stable.exceptions.nonew.abilist |  2 +
+ ...xxabi.v1.stable.noexceptions.nonew.abilist |  3 +-
+ .../runtime/exception_pointer_cxxabi.ipp      |  8 +++
+ .../runtime/exception_pointer_glibcxx.ipp     |  8 +++
+ .../test/libcxx/transitive_includes/cxx03.csv |  5 +-
+ .../test/libcxx/transitive_includes/cxx11.csv |  5 +-
+ .../test/libcxx/transitive_includes/cxx14.csv |  5 +-
+ .../test/libcxx/transitive_includes/cxx17.csv |  5 +-
+ .../test/libcxx/transitive_includes/cxx20.csv |  5 +-
+ .../test/libcxx/transitive_includes/cxx23.csv |  2 +
+ .../test/libcxx/transitive_includes/cxx26.csv |  2 +
+ libcxxabi/include/cxxabi.h                    |  6 +++
+ libcxxabi/lib/exceptions.exp                  |  1 +
+ libcxxabi/src/cxa_exception.cpp               | 32 +++++++-----
+ 28 files changed, 171 insertions(+), 34 deletions(-)
+ create mode 100644 libcxx/benchmarks/exception_ptr.bench.cpp
+
+diff --git a/libcxx/benchmarks/CMakeLists.txt b/libcxx/benchmarks/CMakeLists.txt
+index ce4f5fde47b77..2434d82c6fd6b 100644
+--- a/libcxx/benchmarks/CMakeLists.txt
++++ b/libcxx/benchmarks/CMakeLists.txt
+@@ -202,6 +202,7 @@ set(BENCHMARK_TESTS
+     allocation.bench.cpp
+     deque.bench.cpp
+     deque_iterator.bench.cpp
++    exception_ptr.bench.cpp
+     filesystem.bench.cpp
+     format_to_n.bench.cpp
+     format_to.bench.cpp
+diff --git a/libcxx/benchmarks/exception_ptr.bench.cpp b/libcxx/benchmarks/exception_ptr.bench.cpp
+new file mode 100644
+index 0000000000000..1292ad7935e37
+--- /dev/null
++++ b/libcxx/benchmarks/exception_ptr.bench.cpp
+@@ -0,0 +1,19 @@
++//===----------------------------------------------------------------------===//
++//
++// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++// See https://llvm.org/LICENSE.txt for license information.
++// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++//
++//===----------------------------------------------------------------------===//
++
++#include <benchmark/benchmark.h>
++#include <exception>
++
++void bm_make_exception_ptr(benchmark::State& state) {
++  for (auto _ : state) {
++    benchmark::DoNotOptimize(std::make_exception_ptr(42));
++  }
++}
++BENCHMARK(bm_make_exception_ptr)->ThreadRange(1, 8);
++
++BENCHMARK_MAIN();
+diff --git a/libcxx/docs/BuildingLibcxx.rst b/libcxx/docs/BuildingLibcxx.rst
+index dcd05a28f36d1..28145ed1049e0 100644
+--- a/libcxx/docs/BuildingLibcxx.rst
++++ b/libcxx/docs/BuildingLibcxx.rst
+@@ -563,6 +563,7 @@ We can now run CMake:
+   $ cmake -G Ninja -S runtimes -B build       \
+     -DLLVM_ENABLE_RUNTIMES="libcxx"           \
+     -DLIBCXX_CXX_ABI=libstdc++                \
++    -DLIBCXXABI_USE_LLVM_UNWINDER=OFF         \
+     -DLIBCXX_CXX_ABI_INCLUDE_PATHS="/usr/include/c++/4.7/;/usr/include/c++/4.7/x86_64-linux-gnu/"
+   $ ninja -C build install-cxx
+ 
+@@ -589,6 +590,8 @@ We can now run CMake like:
+   $ cmake -G Ninja -S runtimes -B build                               \
+           -DLLVM_ENABLE_RUNTIMES="libcxx"                             \
+           -DLIBCXX_CXX_ABI=libcxxrt                                   \
++          -DLIBCXX_ENABLE_NEW_DELETE_DEFINITIONS=ON                   \
++          -DLIBCXXABI_USE_LLVM_UNWINDER=OFF                           \
+           -DLIBCXX_CXX_ABI_INCLUDE_PATHS=path/to/libcxxrt-sources/src
+   $ ninja -C build install-cxx
+ 
+diff --git a/libcxx/include/__availability b/libcxx/include/__availability
+index 4f0746ffffc07..c5069a027750e 100644
+--- a/libcxx/include/__availability
++++ b/libcxx/include/__availability
+@@ -101,6 +101,12 @@
+ #  define _LIBCPP_AVAILABILITY_HAS_BAD_ANY_CAST 1
+ #  define _LIBCPP_AVAILABILITY_BAD_ANY_CAST
+ 
++// These macros controls the availability of __cxa_init_primary_exception
++// in the built library, which std::make_exception_ptr might use
++// (see libcxx/include/__exception/exception_ptr.h).
++#  define _LIBCPP_AVAILABILITY_HAS_INIT_PRIMARY_EXCEPTION 1
++#  define _LIBCPP_AVAILABILITY_INIT_PRIMARY_EXCEPTION
++
+ // These macros control the availability of all parts of <filesystem> that
+ // depend on something in the dylib.
+ #  define _LIBCPP_AVAILABILITY_HAS_FILESYSTEM_LIBRARY 1
+@@ -136,9 +142,9 @@
+ #  define _LIBCPP_AVAILABILITY_HAS_TZDB 1
+ #  define _LIBCPP_AVAILABILITY_TZDB
+ 
+-    // This controls the availability of C++23 <print>, which
+-    // has a dependency on the built library (it needs access to
+-    // the underlying buffer types of std::cout, std::cerr, and std::clog.
++// This controls the availability of C++23 <print>, which
++// has a dependency on the built library (it needs access to
++// the underlying buffer types of std::cout, std::cerr, and std::clog.
+ #  define _LIBCPP_AVAILABILITY_HAS_PRINT 1
+ #  define _LIBCPP_AVAILABILITY_PRINT
+ 
+@@ -167,6 +173,10 @@
+ #  define _LIBCPP_AVAILABILITY_BAD_VARIANT_ACCESS _LIBCPP_AVAILABILITY_BAD_OPTIONAL_ACCESS
+ #  define _LIBCPP_AVAILABILITY_BAD_ANY_CAST _LIBCPP_AVAILABILITY_BAD_OPTIONAL_ACCESS
+ 
++// TODO: Update once this is released
++#  define _LIBCPP_AVAILABILITY_HAS_INIT_PRIMARY_EXCEPTION 0
++#  define _LIBCPP_AVAILABILITY_INIT_PRIMARY_EXCEPTION __attribute__((unavailable))
++
+ // <filesystem>
+ // clang-format off
+ #  if (defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__) && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 101500) ||   \
+@@ -303,4 +313,13 @@
+ #  define _LIBCPP_AVAILABILITY_THROW_BAD_VARIANT_ACCESS _LIBCPP_AVAILABILITY_BAD_VARIANT_ACCESS
+ #endif
+ 
++// Define availability attributes that depend on both
++// _LIBCPP_HAS_NO_EXCEPTIONS and _LIBCPP_HAS_NO_RTTI.
++#if defined(_LIBCPP_HAS_NO_EXCEPTIONS) || defined(_LIBCPP_HAS_NO_RTTI)
++#  undef _LIBCPP_AVAILABILITY_HAS_INIT_PRIMARY_EXCEPTION
++#  undef _LIBCPP_AVAILABILITY_INIT_PRIMARY_EXCEPTION
++#  define _LIBCPP_AVAILABILITY_HAS_INIT_PRIMARY_EXCEPTION 0
++#  define _LIBCPP_AVAILABILITY_INIT_PRIMARY_EXCEPTION
++#endif
++
+ #endif // _LIBCPP___AVAILABILITY
+diff --git a/libcxx/include/__exception/exception_ptr.h b/libcxx/include/__exception/exception_ptr.h
+index 970d8196724b7..53e2f718bc1b3 100644
+--- a/libcxx/include/__exception/exception_ptr.h
++++ b/libcxx/include/__exception/exception_ptr.h
+@@ -9,16 +9,44 @@
+ #ifndef _LIBCPP___EXCEPTION_EXCEPTION_PTR_H
+ #define _LIBCPP___EXCEPTION_EXCEPTION_PTR_H
+ 
++#include <__availability>
+ #include <__config>
+ #include <__exception/operations.h>
+ #include <__memory/addressof.h>
++#include <__memory/construct_at.h>
++#include <__type_traits/decay.h>
+ #include <cstddef>
+ #include <cstdlib>
++#include <new>
++#include <typeinfo>
+ 
+ #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+ #  pragma GCC system_header
+ #endif
+ 
++#ifndef _LIBCPP_ABI_MICROSOFT
++
++namespace __cxxabiv1 {
++
++extern "C" {
++_LIBCPP_OVERRIDABLE_FUNC_VIS void* __cxa_allocate_exception(size_t) throw();
++_LIBCPP_OVERRIDABLE_FUNC_VIS void __cxa_free_exception(void*) throw();
++
++struct __cxa_exception;
++_LIBCPP_OVERRIDABLE_FUNC_VIS __cxa_exception* __cxa_init_primary_exception(
++    void*,
++    std::type_info*,
++    void(
++#  if defined(_WIN32)
++        __thiscall
++#  endif
++            *)(void*)) throw();
++}
++
++} // namespace __cxxabiv1
++
++#endif
++
+ namespace std { // purposefully not using versioning namespace
+ 
+ #ifndef _LIBCPP_ABI_MICROSOFT
+@@ -26,6 +54,11 @@ namespace std { // purposefully not using versioning namespace
+ class _LIBCPP_EXPORTED_FROM_ABI exception_ptr {
+   void* __ptr_;
+ 
++  static exception_ptr __from_native_exception_pointer(void*) _NOEXCEPT;
++
++  template <class _Ep>
++  friend _LIBCPP_HIDE_FROM_ABI exception_ptr make_exception_ptr(_Ep) _NOEXCEPT;
++
+ public:
+   _LIBCPP_HIDE_FROM_ABI exception_ptr() _NOEXCEPT : __ptr_() {}
+   _LIBCPP_HIDE_FROM_ABI exception_ptr(nullptr_t) _NOEXCEPT : __ptr_() {}
+@@ -51,11 +84,28 @@ class _LIBCPP_EXPORTED_FROM_ABI exception_ptr {
+ template <class _Ep>
+ _LIBCPP_HIDE_FROM_ABI exception_ptr make_exception_ptr(_Ep __e) _NOEXCEPT {
+ #  ifndef _LIBCPP_HAS_NO_EXCEPTIONS
++#    if _LIBCPP_AVAILABILITY_HAS_INIT_PRIMARY_EXCEPTION && __cplusplus >= 201103L
++  using _Ep2 = __decay_t<_Ep>;
++
++  void* __ex = __cxxabiv1::__cxa_allocate_exception(sizeof(_Ep));
++  (void)__cxxabiv1::__cxa_init_primary_exception(__ex, const_cast<std::type_info*>(&typeid(_Ep)), [](void* __p) {
++    std::__destroy_at(static_cast<_Ep2*>(__p));
++  });
++
++  try {
++    ::new (__ex) _Ep2(__e);
++    return exception_ptr::__from_native_exception_pointer(__ex);
++  } catch (...) {
++    __cxxabiv1::__cxa_free_exception(__ex);
++    return current_exception();
++  }
++#    else
+   try {
+     throw __e;
+   } catch (...) {
+     return current_exception();
+   }
++#    endif
+ #  else
+   ((void)__e);
+   std::abort();
+diff --git a/libcxx/include/new b/libcxx/include/new
+index 136adc41c24be..86fbcb524b66d 100644
+--- a/libcxx/include/new
++++ b/libcxx/include/new
+@@ -362,7 +362,6 @@ _LIBCPP_END_NAMESPACE_STD
+ 
+ #if !defined(_LIBCPP_REMOVE_TRANSITIVE_INCLUDES) && _LIBCPP_STD_VER <= 20
+ #  include <cstdlib>
+-#  include <exception>
+ #  include <type_traits>
+ #endif
+ 
+diff --git a/libcxx/include/typeinfo b/libcxx/include/typeinfo
+index 39a90676cc440..1144b5b12913e 100644
+--- a/libcxx/include/typeinfo
++++ b/libcxx/include/typeinfo
+@@ -372,7 +372,6 @@ _LIBCPP_END_NAMESPACE_STD
+ 
+ #if !defined(_LIBCPP_REMOVE_TRANSITIVE_INCLUDES) && _LIBCPP_STD_VER <= 20
+ #  include <cstdlib>
+-#  include <exception>
+ #  include <type_traits>
+ #endif
+ 
+diff --git a/libcxx/lib/abi/arm64-apple-darwin.libcxxabi.v1.stable.exceptions.nonew.abilist b/libcxx/lib/abi/arm64-apple-darwin.libcxxabi.v1.stable.exceptions.nonew.abilist
+index b51af1bb0f9ef..c2fea4d8adb42 100644
+--- a/libcxx/lib/abi/arm64-apple-darwin.libcxxabi.v1.stable.exceptions.nonew.abilist
++++ b/libcxx/lib/abi/arm64-apple-darwin.libcxxabi.v1.stable.exceptions.nonew.abilist
+@@ -300,6 +300,7 @@
+ {'is_defined': False, 'name': '___cxa_guard_acquire', 'type': 'U'}
+ {'is_defined': False, 'name': '___cxa_guard_release', 'type': 'U'}
+ {'is_defined': False, 'name': '___cxa_increment_exception_refcount', 'type': 'U'}
++{'is_defined': False, 'name': '___cxa_init_primary_exception', 'type': 'U'}
+ {'is_defined': False, 'name': '___cxa_pure_virtual', 'type': 'U'}
+ {'is_defined': False, 'name': '___cxa_rethrow', 'type': 'U'}
+ {'is_defined': False, 'name': '___cxa_rethrow_primary_exception', 'type': 'U'}
+@@ -811,6 +812,7 @@
+ {'is_defined': True, 'name': '__ZNSt13bad_exceptionD0Ev', 'type': 'I'}
+ {'is_defined': True, 'name': '__ZNSt13bad_exceptionD1Ev', 'type': 'I'}
+ {'is_defined': True, 'name': '__ZNSt13bad_exceptionD2Ev', 'type': 'I'}
++{'is_defined': True, 'name': '__ZNSt13exception_ptr31__from_native_exception_pointerEPv', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__ZNSt13exception_ptrC1ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__ZNSt13exception_ptrC2ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__ZNSt13exception_ptrD1Ev', 'type': 'FUNC'}
+@@ -2509,6 +2511,7 @@
+ {'is_defined': True, 'name': '___cxa_guard_abort', 'type': 'I'}
+ {'is_defined': True, 'name': '___cxa_guard_acquire', 'type': 'I'}
+ {'is_defined': True, 'name': '___cxa_guard_release', 'type': 'I'}
++{'is_defined': True, 'name': '___cxa_init_primary_exception', 'type': 'I'}
+ {'is_defined': True, 'name': '___cxa_pure_virtual', 'type': 'I'}
+ {'is_defined': True, 'name': '___cxa_rethrow', 'type': 'I'}
+ {'is_defined': True, 'name': '___cxa_throw', 'type': 'I'}
+diff --git a/libcxx/lib/abi/i686-linux-android21.libcxxabi.v1.stable.exceptions.nonew.abilist b/libcxx/lib/abi/i686-linux-android21.libcxxabi.v1.stable.exceptions.nonew.abilist
+index c78fa0e7c68f7..a60f099b53205 100644
+--- a/libcxx/lib/abi/i686-linux-android21.libcxxabi.v1.stable.exceptions.nonew.abilist
++++ b/libcxx/lib/abi/i686-linux-android21.libcxxabi.v1.stable.exceptions.nonew.abilist
+@@ -493,6 +493,7 @@
+ {'is_defined': True, 'name': '_ZNSt13bad_exceptionD0Ev', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13bad_exceptionD1Ev', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13bad_exceptionD2Ev', 'type': 'FUNC'}
++{'is_defined': True, 'name': '_ZNSt13exception_ptr31__from_native_exception_pointerEPv', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrC1ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrC2ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrD1Ev', 'type': 'FUNC'}
+@@ -2311,6 +2312,7 @@
+ {'is_defined': True, 'name': '__cxa_guard_acquire', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__cxa_guard_release', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__cxa_increment_exception_refcount', 'type': 'FUNC'}
++{'is_defined': True, 'name': '__cxa_init_primary_exception', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__cxa_new_handler', 'size': 4, 'type': 'OBJECT'}
+ {'is_defined': True, 'name': '__cxa_pure_virtual', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__cxa_rethrow', 'type': 'FUNC'}
+diff --git a/libcxx/lib/abi/powerpc-ibm-aix.libcxxabi.v1.stable.exceptions.nonew.abilist b/libcxx/lib/abi/powerpc-ibm-aix.libcxxabi.v1.stable.exceptions.nonew.abilist
+index 55987d4c913bb..a159ff5221866 100644
+--- a/libcxx/lib/abi/powerpc-ibm-aix.libcxxabi.v1.stable.exceptions.nonew.abilist
++++ b/libcxx/lib/abi/powerpc-ibm-aix.libcxxabi.v1.stable.exceptions.nonew.abilist
+@@ -249,6 +249,7 @@
+ {'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD0Ev', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD1Ev', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD2Ev', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
++{'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt13exception_ptr31__from_native_exception_pointerEPv', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt13exception_ptrC1ERKS_', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt13exception_ptrC2ERKS_', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt13exception_ptrD1Ev', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+@@ -1111,6 +1112,7 @@
+ {'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_guard_acquire', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_guard_release', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_increment_exception_refcount', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
++{'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_init_primary_exception', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_pure_virtual', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_rethrow', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_rethrow_primary_exception', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+diff --git a/libcxx/lib/abi/powerpc64-ibm-aix.libcxxabi.v1.stable.exceptions.nonew.abilist b/libcxx/lib/abi/powerpc64-ibm-aix.libcxxabi.v1.stable.exceptions.nonew.abilist
+index d861d890861bf..5749a7520f9ba 100644
+--- a/libcxx/lib/abi/powerpc64-ibm-aix.libcxxabi.v1.stable.exceptions.nonew.abilist
++++ b/libcxx/lib/abi/powerpc64-ibm-aix.libcxxabi.v1.stable.exceptions.nonew.abilist
+@@ -249,6 +249,7 @@
+ {'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD0Ev', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD1Ev', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD2Ev', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
++{'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt13exception_ptr31__from_native_exception_pointerEPv', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt13exception_ptrC1ERKS_', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt13exception_ptrC2ERKS_', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'EXP', 'is_defined': True, 'name': '_ZNSt13exception_ptrD1Ev', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+@@ -1111,6 +1112,7 @@
+ {'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_guard_acquire', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_guard_release', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_increment_exception_refcount', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
++{'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_init_primary_exception', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_pure_virtual', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_rethrow', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+ {'import_export': 'IMP', 'is_defined': False, 'name': '__cxa_rethrow_primary_exception', 'storage_mapping_class': 'DS', 'type': 'FUNC'}
+diff --git a/libcxx/lib/abi/x86_64-apple-darwin.libcxxabi.v1.stable.exceptions.nonew.abilist b/libcxx/lib/abi/x86_64-apple-darwin.libcxxabi.v1.stable.exceptions.nonew.abilist
+index ce0a2e354d6d2..e827114f16919 100644
+--- a/libcxx/lib/abi/x86_64-apple-darwin.libcxxabi.v1.stable.exceptions.nonew.abilist
++++ b/libcxx/lib/abi/x86_64-apple-darwin.libcxxabi.v1.stable.exceptions.nonew.abilist
+@@ -300,6 +300,7 @@
+ {'is_defined': False, 'name': '___cxa_guard_acquire', 'type': 'U'}
+ {'is_defined': False, 'name': '___cxa_guard_release', 'type': 'U'}
+ {'is_defined': False, 'name': '___cxa_increment_exception_refcount', 'type': 'U'}
++{'is_defined': False, 'name': '___cxa_init_primary_exception', 'type': 'U'}
+ {'is_defined': False, 'name': '___cxa_pure_virtual', 'type': 'U'}
+ {'is_defined': False, 'name': '___cxa_rethrow', 'type': 'U'}
+ {'is_defined': False, 'name': '___cxa_rethrow_primary_exception', 'type': 'U'}
+@@ -811,6 +812,7 @@
+ {'is_defined': True, 'name': '__ZNSt13bad_exceptionD0Ev', 'type': 'I'}
+ {'is_defined': True, 'name': '__ZNSt13bad_exceptionD1Ev', 'type': 'I'}
+ {'is_defined': True, 'name': '__ZNSt13bad_exceptionD2Ev', 'type': 'I'}
++{'is_defined': True, 'name': '__ZNSt13exception_ptr31__from_native_exception_pointerEPv', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__ZNSt13exception_ptrC1ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__ZNSt13exception_ptrC2ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__ZNSt13exception_ptrD1Ev', 'type': 'FUNC'}
+@@ -2543,6 +2545,7 @@
+ {'is_defined': True, 'name': '___cxa_guard_abort', 'type': 'I'}
+ {'is_defined': True, 'name': '___cxa_guard_acquire', 'type': 'I'}
+ {'is_defined': True, 'name': '___cxa_guard_release', 'type': 'I'}
++{'is_defined': True, 'name': '___cxa_init_primary_exception', 'type': 'I'}
+ {'is_defined': True, 'name': '___cxa_pure_virtual', 'type': 'I'}
+ {'is_defined': True, 'name': '___cxa_rethrow', 'type': 'I'}
+ {'is_defined': True, 'name': '___cxa_throw', 'type': 'I'}
+diff --git a/libcxx/lib/abi/x86_64-linux-android21.libcxxabi.v1.stable.exceptions.nonew.abilist b/libcxx/lib/abi/x86_64-linux-android21.libcxxabi.v1.stable.exceptions.nonew.abilist
+index ae88d4453e3b9..f4077adc074e0 100644
+--- a/libcxx/lib/abi/x86_64-linux-android21.libcxxabi.v1.stable.exceptions.nonew.abilist
++++ b/libcxx/lib/abi/x86_64-linux-android21.libcxxabi.v1.stable.exceptions.nonew.abilist
+@@ -493,6 +493,7 @@
+ {'is_defined': True, 'name': '_ZNSt13bad_exceptionD0Ev', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13bad_exceptionD1Ev', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13bad_exceptionD2Ev', 'type': 'FUNC'}
++{'is_defined': True, 'name': '_ZNSt13exception_ptr31__from_native_exception_pointerEPv', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrC1ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrC2ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrD1Ev', 'type': 'FUNC'}
+@@ -2305,6 +2306,7 @@
+ {'is_defined': True, 'name': '__cxa_guard_acquire', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__cxa_guard_release', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__cxa_increment_exception_refcount', 'type': 'FUNC'}
++{'is_defined': True, 'name': '__cxa_init_primary_exception', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__cxa_new_handler', 'size': 8, 'type': 'OBJECT'}
+ {'is_defined': True, 'name': '__cxa_pure_virtual', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '__cxa_rethrow', 'type': 'FUNC'}
+diff --git a/libcxx/lib/abi/x86_64-unknown-freebsd.libcxxabi.v1.stable.exceptions.nonew.abilist b/libcxx/lib/abi/x86_64-unknown-freebsd.libcxxabi.v1.stable.exceptions.nonew.abilist
+index f55dffc312090..e3d3fcb35d840 100644
+--- a/libcxx/lib/abi/x86_64-unknown-freebsd.libcxxabi.v1.stable.exceptions.nonew.abilist
++++ b/libcxx/lib/abi/x86_64-unknown-freebsd.libcxxabi.v1.stable.exceptions.nonew.abilist
+@@ -56,6 +56,7 @@
+ {'is_defined': False, 'name': '__cxa_guard_acquire', 'type': 'FUNC'}
+ {'is_defined': False, 'name': '__cxa_guard_release', 'type': 'FUNC'}
+ {'is_defined': False, 'name': '__cxa_increment_exception_refcount', 'type': 'FUNC'}
++{'is_defined': False, 'name': '__cxa_init_primary_exception', 'type': 'FUNC'}
+ {'is_defined': False, 'name': '__cxa_pure_virtual', 'type': 'FUNC'}
+ {'is_defined': False, 'name': '__cxa_rethrow', 'type': 'FUNC'}
+ {'is_defined': False, 'name': '__cxa_rethrow_primary_exception', 'type': 'FUNC'}
+@@ -523,6 +524,7 @@
+ {'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD0Ev', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD1Ev', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD2Ev', 'type': 'FUNC'}
++{'is_defined': True, 'name': '_ZNSt13exception_ptr31__from_native_exception_pointerEPv', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrC1ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrC2ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrD1Ev', 'type': 'FUNC'}
+diff --git a/libcxx/lib/abi/x86_64-unknown-linux-gnu.libcxxabi.v1.stable.exceptions.nonew.abilist b/libcxx/lib/abi/x86_64-unknown-linux-gnu.libcxxabi.v1.stable.exceptions.nonew.abilist
+index 74408ca930c90..16923301d2548 100644
+--- a/libcxx/lib/abi/x86_64-unknown-linux-gnu.libcxxabi.v1.stable.exceptions.nonew.abilist
++++ b/libcxx/lib/abi/x86_64-unknown-linux-gnu.libcxxabi.v1.stable.exceptions.nonew.abilist
+@@ -54,6 +54,7 @@
+ {'is_defined': False, 'name': '__cxa_guard_acquire', 'type': 'FUNC'}
+ {'is_defined': False, 'name': '__cxa_guard_release', 'type': 'FUNC'}
+ {'is_defined': False, 'name': '__cxa_increment_exception_refcount', 'type': 'FUNC'}
++{'is_defined': False, 'name': '__cxa_init_primary_exception', 'type': 'FUNC'}
+ {'is_defined': False, 'name': '__cxa_pure_virtual', 'type': 'FUNC'}
+ {'is_defined': False, 'name': '__cxa_rethrow', 'type': 'FUNC'}
+ {'is_defined': False, 'name': '__cxa_rethrow_primary_exception', 'type': 'FUNC'}
+@@ -521,6 +522,7 @@
+ {'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD0Ev', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD1Ev', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD2Ev', 'type': 'FUNC'}
++{'is_defined': True, 'name': '_ZNSt13exception_ptr31__from_native_exception_pointerEPv', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrC1ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrC2ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrD1Ev', 'type': 'FUNC'}
+diff --git a/libcxx/lib/abi/x86_64-unknown-linux-gnu.libcxxabi.v1.stable.noexceptions.nonew.abilist b/libcxx/lib/abi/x86_64-unknown-linux-gnu.libcxxabi.v1.stable.noexceptions.nonew.abilist
+index 618d2968d1a64..2380ffb100de9 100644
+--- a/libcxx/lib/abi/x86_64-unknown-linux-gnu.libcxxabi.v1.stable.noexceptions.nonew.abilist
++++ b/libcxx/lib/abi/x86_64-unknown-linux-gnu.libcxxabi.v1.stable.noexceptions.nonew.abilist
+@@ -493,6 +493,7 @@
+ {'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD0Ev', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD1Ev', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt12experimental19bad_optional_accessD2Ev', 'type': 'FUNC'}
++{'is_defined': True, 'name': '_ZNSt13exception_ptr31__from_native_exception_pointerEPv', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrC1ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrC2ERKS_', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZNSt13exception_ptrD1Ev', 'type': 'FUNC'}
+@@ -1999,4 +2000,4 @@
+ {'is_defined': True, 'name': '_ZTv0_n24_NSt3__114basic_iostreamIcNS_11char_traitsIcEEED0Ev', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZTv0_n24_NSt3__114basic_iostreamIcNS_11char_traitsIcEEED1Ev', 'type': 'FUNC'}
+ {'is_defined': True, 'name': '_ZTv0_n24_NSt3__19strstreamD0Ev', 'type': 'FUNC'}
+-{'is_defined': True, 'name': '_ZTv0_n24_NSt3__19strstreamD1Ev', 'type': 'FUNC'}
+\ No newline at end of file
++{'is_defined': True, 'name': '_ZTv0_n24_NSt3__19strstreamD1Ev', 'type': 'FUNC'}
+diff --git a/libcxx/src/support/runtime/exception_pointer_cxxabi.ipp b/libcxx/src/support/runtime/exception_pointer_cxxabi.ipp
+index c07de5838b14a..bdb17b9996b7e 100644
+--- a/libcxx/src/support/runtime/exception_pointer_cxxabi.ipp
++++ b/libcxx/src/support/runtime/exception_pointer_cxxabi.ipp
+@@ -28,6 +28,14 @@ exception_ptr& exception_ptr::operator=(const exception_ptr& other) noexcept {
+   return *this;
+ }
+ 
++exception_ptr exception_ptr::__from_native_exception_pointer(void* __e) noexcept {
++  exception_ptr ptr;
++  ptr.__ptr_ = __e;
++  __cxa_increment_exception_refcount(ptr.__ptr_);
++
++  return ptr;
++}
++
+ nested_exception::nested_exception() noexcept : __ptr_(current_exception()) {}
+ 
+ nested_exception::~nested_exception() noexcept {}
+diff --git a/libcxx/src/support/runtime/exception_pointer_glibcxx.ipp b/libcxx/src/support/runtime/exception_pointer_glibcxx.ipp
+index 8e0e63cd4d497..6dad248f9e1fd 100644
+--- a/libcxx/src/support/runtime/exception_pointer_glibcxx.ipp
++++ b/libcxx/src/support/runtime/exception_pointer_glibcxx.ipp
+@@ -23,6 +23,7 @@ namespace __exception_ptr {
+ struct exception_ptr {
+   void* __ptr_;
+ 
++  explicit exception_ptr(void*) noexcept;
+   exception_ptr(const exception_ptr&) noexcept;
+   exception_ptr& operator=(const exception_ptr&) noexcept;
+   ~exception_ptr() noexcept;
+@@ -45,6 +46,13 @@ exception_ptr& exception_ptr::operator=(const exception_ptr& other) noexcept {
+   return *this;
+ }
+ 
++exception_ptr exception_ptr::__from_native_exception_pointer(void* __e) noexcept {
++  exception_ptr ptr{};
++  new (reinterpret_cast<void*>(&ptr)) __exception_ptr::exception_ptr(__e);
++
++  return ptr;
++}
++
+ nested_exception::nested_exception() noexcept : __ptr_(current_exception()) {}
+ 
+ _LIBCPP_NORETURN void nested_exception::rethrow_nested() const {
+diff --git a/libcxx/test/libcxx/transitive_includes/cxx03.csv b/libcxx/test/libcxx/transitive_includes/cxx03.csv
+index 5769fc70d8a75..7737551fa08b1 100644
+--- a/libcxx/test/libcxx/transitive_includes/cxx03.csv
++++ b/libcxx/test/libcxx/transitive_includes/cxx03.csv
+@@ -221,7 +221,9 @@ deque typeinfo
+ deque version
+ exception cstddef
+ exception cstdlib
++exception new
+ exception type_traits
++exception typeinfo
+ exception version
+ execution cstddef
+ execution version
+@@ -536,7 +538,6 @@ mutex typeinfo
+ mutex version
+ new cstddef
+ new cstdlib
+-new exception
+ new type_traits
+ new version
+ numbers concepts
+@@ -643,7 +644,6 @@ ranges initializer_list
+ ranges iosfwd
+ ranges iterator
+ ranges limits
+-ranges new
+ ranges optional
+ ranges span
+ ranges tuple
+@@ -875,7 +875,6 @@ typeindex version
+ typeinfo cstddef
+ typeinfo cstdint
+ typeinfo cstdlib
+-typeinfo exception
+ typeinfo type_traits
+ unordered_map algorithm
+ unordered_map bit
+diff --git a/libcxx/test/libcxx/transitive_includes/cxx11.csv b/libcxx/test/libcxx/transitive_includes/cxx11.csv
+index 863b674a13d0a..21f0138b1b4bb 100644
+--- a/libcxx/test/libcxx/transitive_includes/cxx11.csv
++++ b/libcxx/test/libcxx/transitive_includes/cxx11.csv
+@@ -222,7 +222,9 @@ deque typeinfo
+ deque version
+ exception cstddef
+ exception cstdlib
++exception new
+ exception type_traits
++exception typeinfo
+ exception version
+ execution cstddef
+ execution version
+@@ -541,7 +543,6 @@ mutex typeinfo
+ mutex version
+ new cstddef
+ new cstdlib
+-new exception
+ new type_traits
+ new version
+ numbers concepts
+@@ -648,7 +649,6 @@ ranges initializer_list
+ ranges iosfwd
+ ranges iterator
+ ranges limits
+-ranges new
+ ranges optional
+ ranges span
+ ranges tuple
+@@ -881,7 +881,6 @@ typeindex version
+ typeinfo cstddef
+ typeinfo cstdint
+ typeinfo cstdlib
+-typeinfo exception
+ typeinfo type_traits
+ unordered_map algorithm
+ unordered_map bit
+diff --git a/libcxx/test/libcxx/transitive_includes/cxx14.csv b/libcxx/test/libcxx/transitive_includes/cxx14.csv
+index bbaf1ed89fac6..71d1735d79487 100644
+--- a/libcxx/test/libcxx/transitive_includes/cxx14.csv
++++ b/libcxx/test/libcxx/transitive_includes/cxx14.csv
+@@ -222,7 +222,9 @@ deque typeinfo
+ deque version
+ exception cstddef
+ exception cstdlib
++exception new
+ exception type_traits
++exception typeinfo
+ exception version
+ execution cstddef
+ execution version
+@@ -543,7 +545,6 @@ mutex typeinfo
+ mutex version
+ new cstddef
+ new cstdlib
+-new exception
+ new type_traits
+ new version
+ numbers concepts
+@@ -650,7 +651,6 @@ ranges initializer_list
+ ranges iosfwd
+ ranges iterator
+ ranges limits
+-ranges new
+ ranges optional
+ ranges span
+ ranges tuple
+@@ -883,7 +883,6 @@ typeindex version
+ typeinfo cstddef
+ typeinfo cstdint
+ typeinfo cstdlib
+-typeinfo exception
+ typeinfo type_traits
+ unordered_map algorithm
+ unordered_map bit
+diff --git a/libcxx/test/libcxx/transitive_includes/cxx17.csv b/libcxx/test/libcxx/transitive_includes/cxx17.csv
+index bbaf1ed89fac6..71d1735d79487 100644
+--- a/libcxx/test/libcxx/transitive_includes/cxx17.csv
++++ b/libcxx/test/libcxx/transitive_includes/cxx17.csv
+@@ -222,7 +222,9 @@ deque typeinfo
+ deque version
+ exception cstddef
+ exception cstdlib
++exception new
+ exception type_traits
++exception typeinfo
+ exception version
+ execution cstddef
+ execution version
+@@ -543,7 +545,6 @@ mutex typeinfo
+ mutex version
+ new cstddef
+ new cstdlib
+-new exception
+ new type_traits
+ new version
+ numbers concepts
+@@ -650,7 +651,6 @@ ranges initializer_list
+ ranges iosfwd
+ ranges iterator
+ ranges limits
+-ranges new
+ ranges optional
+ ranges span
+ ranges tuple
+@@ -883,7 +883,6 @@ typeindex version
+ typeinfo cstddef
+ typeinfo cstdint
+ typeinfo cstdlib
+-typeinfo exception
+ typeinfo type_traits
+ unordered_map algorithm
+ unordered_map bit
+diff --git a/libcxx/test/libcxx/transitive_includes/cxx20.csv b/libcxx/test/libcxx/transitive_includes/cxx20.csv
+index 07e23053e9558..4d4372275eb82 100644
+--- a/libcxx/test/libcxx/transitive_includes/cxx20.csv
++++ b/libcxx/test/libcxx/transitive_includes/cxx20.csv
+@@ -228,7 +228,9 @@ deque typeinfo
+ deque version
+ exception cstddef
+ exception cstdlib
++exception new
+ exception type_traits
++exception typeinfo
+ exception version
+ execution cstddef
+ execution version
+@@ -548,7 +550,6 @@ mutex typeinfo
+ mutex version
+ new cstddef
+ new cstdlib
+-new exception
+ new type_traits
+ new version
+ numbers concepts
+@@ -655,7 +656,6 @@ ranges initializer_list
+ ranges iosfwd
+ ranges iterator
+ ranges limits
+-ranges new
+ ranges optional
+ ranges span
+ ranges tuple
+@@ -887,7 +887,6 @@ typeindex version
+ typeinfo cstddef
+ typeinfo cstdint
+ typeinfo cstdlib
+-typeinfo exception
+ typeinfo type_traits
+ unordered_map algorithm
+ unordered_map bit
+diff --git a/libcxx/test/libcxx/transitive_includes/cxx23.csv b/libcxx/test/libcxx/transitive_includes/cxx23.csv
+index 23a1f42556f22..94c67307cc2f1 100644
+--- a/libcxx/test/libcxx/transitive_includes/cxx23.csv
++++ b/libcxx/test/libcxx/transitive_includes/cxx23.csv
+@@ -153,6 +153,8 @@ deque tuple
+ deque version
+ exception cstddef
+ exception cstdlib
++exception new
++exception typeinfo
+ exception version
+ execution cstddef
+ execution version
+diff --git a/libcxx/test/libcxx/transitive_includes/cxx26.csv b/libcxx/test/libcxx/transitive_includes/cxx26.csv
+index 23a1f42556f22..94c67307cc2f1 100644
+--- a/libcxx/test/libcxx/transitive_includes/cxx26.csv
++++ b/libcxx/test/libcxx/transitive_includes/cxx26.csv
+@@ -153,6 +153,8 @@ deque tuple
+ deque version
+ exception cstddef
+ exception cstdlib
++exception new
++exception typeinfo
+ exception version
+ execution cstddef
+ execution version
+diff --git a/libcxxabi/include/cxxabi.h b/libcxxabi/include/cxxabi.h
+index 6f4f823bc273f..d0701181751c5 100644
+--- a/libcxxabi/include/cxxabi.h
++++ b/libcxxabi/include/cxxabi.h
+@@ -36,6 +36,9 @@ class type_info; // forward declaration
+ 
+ // runtime routines use C calling conventions, but are in __cxxabiv1 namespace
+ namespace __cxxabiv1 {
++
++struct __cxa_exception;
++
+ extern "C"  {
+ 
+ // 2.4.2 Allocating the Exception Object
+@@ -43,6 +46,9 @@ extern _LIBCXXABI_FUNC_VIS void *
+ __cxa_allocate_exception(size_t thrown_size) throw();
+ extern _LIBCXXABI_FUNC_VIS void
+ __cxa_free_exception(void *thrown_exception) throw();
++// This function is an LLVM extension, which mirrors the same extension in libsupc++ and libcxxrt
++extern _LIBCXXABI_FUNC_VIS __cxa_exception*
++__cxa_init_primary_exception(void* object, std::type_info* tinfo, void(_LIBCXXABI_DTOR_FUNC* dest)(void*)) throw();
+ 
+ // 2.4.3 Throwing the Exception Object
+ extern _LIBCXXABI_FUNC_VIS _LIBCXXABI_NORETURN void
+diff --git a/libcxxabi/lib/exceptions.exp b/libcxxabi/lib/exceptions.exp
+index c3780d2974903..9dcfbdbd3598e 100644
+--- a/libcxxabi/lib/exceptions.exp
++++ b/libcxxabi/lib/exceptions.exp
+@@ -7,5 +7,6 @@ ___cxa_end_catch
+ ___cxa_free_dependent_exception
+ ___cxa_free_exception
+ ___cxa_get_exception_ptr
++___cxa_init_primary_exception
+ ___cxa_rethrow
+ ___cxa_throw
+diff --git a/libcxxabi/src/cxa_exception.cpp b/libcxxabi/src/cxa_exception.cpp
+index f723ececfe332..65e9f4504ddad 100644
+--- a/libcxxabi/src/cxa_exception.cpp
++++ b/libcxxabi/src/cxa_exception.cpp
+@@ -206,6 +206,19 @@ void __cxa_free_exception(void *thrown_object) throw() {
+     __aligned_free_with_fallback((void *)raw_buffer);
+ }
+ 
++__cxa_exception* __cxa_init_primary_exception(void* object, std::type_info* tinfo,
++                                              void(_LIBCXXABI_DTOR_FUNC* dest)(void*)) throw() {
++  __cxa_exception* exception_header = cxa_exception_from_thrown_object(object);
++  exception_header->referenceCount = 0;
++  exception_header->unexpectedHandler = std::get_unexpected();
++  exception_header->terminateHandler = std::get_terminate();
++  exception_header->exceptionType = tinfo;
++  exception_header->exceptionDestructor = dest;
++  setOurExceptionClass(&exception_header->unwindHeader);
++  exception_header->unwindHeader.exception_cleanup = exception_cleanup_func;
++
++  return exception_header;
++}
+ 
+ //  This function shall allocate a __cxa_dependent_exception and
+ //  return a pointer to it. (Really to the object, not past its' end).
+@@ -260,22 +273,15 @@ __cxa_throw(void *thrown_object, std::type_info *tinfo, void *(_LIBCXXABI_DTOR_F
+ #else
+ __cxa_throw(void *thrown_object, std::type_info *tinfo, void (_LIBCXXABI_DTOR_FUNC *dest)(void *)) {
+ #endif
+-    __cxa_eh_globals *globals = __cxa_get_globals();
+-    __cxa_exception* exception_header = cxa_exception_from_thrown_object(thrown_object);
+-
+-    exception_header->unexpectedHandler = std::get_unexpected();
+-    exception_header->terminateHandler  = std::get_terminate();
+-    exception_header->exceptionType = tinfo;
+-    exception_header->exceptionDestructor = dest;
+-    setOurExceptionClass(&exception_header->unwindHeader);
+-    exception_header->referenceCount = 1;  // This is a newly allocated exception, no need for thread safety.
+-    globals->uncaughtExceptions += 1;   // Not atomically, since globals are thread-local
++  __cxa_eh_globals* globals = __cxa_get_globals();
++  globals->uncaughtExceptions += 1; // Not atomically, since globals are thread-local
+ 
+-    exception_header->unwindHeader.exception_cleanup = exception_cleanup_func;
++  __cxa_exception* exception_header = __cxa_init_primary_exception(thrown_object, tinfo, dest);
++  exception_header->referenceCount = 1; // This is a newly allocated exception, no need for thread safety.
+ 
+ #if __has_feature(address_sanitizer)
+-    // Inform the ASan runtime that now might be a good time to clean stuff up.
+-    __asan_handle_no_return();
++  // Inform the ASan runtime that now might be a good time to clean stuff up.
++  __asan_handle_no_return();
+ #endif
+ 
+ #ifdef __USING_SJLJ_EXCEPTIONS__
+ 

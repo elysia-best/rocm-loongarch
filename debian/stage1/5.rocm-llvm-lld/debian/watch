@@ -1,0 +1,5 @@
+Version: 5
+
+Source: https://github.com/ROCm/llvm-project/tags
+Matching-Pattern: (?:.*?/)?rocm-@ANY_VERSION@@ARCHIVE_EXT@
+Filenamemangle: s%(?:.*?)?rocm-(\d[\d.]*)\.tar\.gz%@PACKAGE@-$1.tar.gz%

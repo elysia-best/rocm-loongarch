@@ -1,0 +1,2 @@
+rm -f "/opt/rocm-%PKG_FULL_VERSION%/bin/amdlld"
+rmdir --ignore-fail-on-non-empty "/opt/rocm-%PKG_FULL_VERSION%/bin"

@@ -1,0 +1,26 @@
+From edbe7fa5fef93bb747cb58a589dc25901793774b Mon Sep 17 00:00:00 2001
+From: Weining Lu <luweining@loongson.cn>
+Date: Tue, 5 Mar 2024 23:19:16 +0800
+Subject: [PATCH] [lld][LoongArch] Fix handleUleb128
+
+(cherry picked from commit a41bcb3930534ef1525b4fc30e53e818b39e2b60)
+---
+ lld/ELF/Arch/LoongArch.cpp | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/lld/ELF/Arch/LoongArch.cpp b/lld/ELF/Arch/LoongArch.cpp
+index 8a6f6db68f290..464f5dfb320cc 100644
+--- a/lld/ELF/Arch/LoongArch.cpp
++++ b/lld/ELF/Arch/LoongArch.cpp
+@@ -159,8 +159,9 @@ static bool isJirl(uint32_t insn) {
+ static void handleUleb128(uint8_t *loc, uint64_t val) {
+   const uint32_t maxcount = 1 + 64 / 7;
+   uint32_t count;
+-  uint64_t orig = decodeULEB128(loc, &count);
+-  if (count > maxcount)
++  const char *error = nullptr;
++  uint64_t orig = decodeULEB128(loc, &count, nullptr, &error);
++  if (count > maxcount || (count == maxcount && error))
+     errorOrWarn(getErrorLocation(loc) + "extra space for uleb128");
+   uint64_t mask = count < maxcount ? (1ULL << 7 * count) - 1 : -1ULL;
+   encodeULEB128((orig + val) & mask, loc, count);

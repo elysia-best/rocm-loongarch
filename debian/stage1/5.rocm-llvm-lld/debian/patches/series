@@ -1,0 +1,7 @@
+000-loongarch.patch
+001-optimise_std_make_exception_ptr.patch
+002-fix-libamdhip64-library-path.patch
+003-Clean_up_R_RISCV_RELAX_code.patch
+004-Support_the_R_LARCH_ADD_SUB_ULEB128_relocation_types.patch
+005-LoongArch_Fix_handleUleb128.patch
+006-Support_relax_R_LARCH_ALIGN.patch
