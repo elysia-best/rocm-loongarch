@@ -19,9 +19,6 @@ override_dh_auto_configure:
 	mkdir $(SOURCE_PATH)/build_/comgr
 	mkdir $(SOURCE_PATH)/build_/hipcc
 
-	cd $(SOURCE_PATH)/build_
-
-	cd device-libs
 	CC=clang CXX=clang++ cmake -B$(SOURCE_PATH)/build_/device-libs -S$(DEVICE_LIBS_DIR)  -G Ninja \
 		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
@@ -32,9 +29,7 @@ override_dh_auto_configure:
 		-DCMAKE_LINKER_TYPE=LLD \
 		-DCMAKE_FIND_ROOT_PATH=/opt/rocm-$(UPSTREAM_VERSION)/ \
 		-DCMAKE_PREFIX_PATH=/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/
-	cd ..
 
-	cd comgr
 	CC=clang CXX=clang++ cmake -B$(SOURCE_PATH)/build_/comgr -S $(COMGR_DIR) -G Ninja \
 		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
@@ -46,9 +41,7 @@ override_dh_auto_configure:
 		-DCMAKE_LINKER_TYPE=LLD \
 		-DCMAKE_FIND_ROOT_PATH=/opt/rocm-$(UPSTREAM_VERSION)/ \
 		-DCMAKE_PREFIX_PATH=/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/
-	cd ..
 
-	cd hipcc
 	CC=clang CXX=clang++ cmake -B$(SOURCE_PATH)/build_/hipcc -S $(HIPCC_DIR) -G Ninja \
 		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
@@ -59,7 +52,6 @@ override_dh_auto_configure:
 		-DCMAKE_LINKER_TYPE=LLD \
 		-DCMAKE_FIND_ROOT_PATH=/opt/rocm-$(UPSTREAM_VERSION)/ \
 		-DCMAKE_PREFIX_PATH=/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/
-	cd ..
 
 override_dh_auto_build:
 	for dir in device-libs comgr hipcc; do \
