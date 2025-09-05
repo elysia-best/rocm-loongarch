@@ -17,8 +17,7 @@ LLVM_TARGETS = AMDGPU;NVPTX;LoongArch;X86;RISCV;
 # Define extra c-flags
 EXT_CFLAGS := -pipe \
 			  -mcmodel=medium \
-			  -Wno-missing-template-arg-list-after-template-kw \
-			  -stdlib=libc++ -fPIC
+			  -Wno-missing-template-arg-list-after-template-kw 
 
 # Define source path
 CLANG_SOURCE_DIR = $(realpath lld)
@@ -39,11 +38,9 @@ override_dh_auto_configure: debian/postinst debian/prerm
 		-DLLVM_DEFAULT_TARGET_TRIPLE="$(DEB_BUILD_GNU_TYPE)" \
 		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib64" \
 		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib64" \
-		-DCMAKE_EXE_LINKER_FLAGS="-L/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib -L/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib64" \
 		-DPROJECT_VERSION_MAJOR=$(MAJOR) \
 		-DPROJECT_VERSION_MINOR=$(MINOR) \
 		-DPROJECT_VERSION_PATCH=$(PATCH) \
-		-DLLVM_ENABLE_LIBCXX=ON \
 		-DLLVM_CMAKE_DIR=/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/ \
 		-G "Ninja" \
 		-S $(CLANG_SOURCE_DIR)
