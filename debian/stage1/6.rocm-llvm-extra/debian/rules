@@ -14,60 +14,66 @@ HIPCC_DIR = $(realpath amd/hipcc)
 	CC=clang CXX=clang++ dh $@
 
 override_dh_auto_configure:
-	mkdir device-libs
-	mkdir comgr
-	mkdir hipcc
+	mkdir -p $(SOURCE_PATH)/build_
+	mkdir $(SOURCE_PATH)/build_/device-libs
+	mkdir $(SOURCE_PATH)/build_/comgr
+	mkdir $(SOURCE_PATH)/build_/hipcc
+
+	cd $(SOURCE_PATH)/build_
 
 	cd device-libs
-	CC=clang CXX=clang++ cmake -S $(DEVICE_LIBS_DIR) -G Ninja \
+	CC=clang CXX=clang++ cmake -B$(SOURCE_PATH)/build_/device-libs -S$(DEVICE_LIBS_DIR)  -G Ninja \
 		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \
-		-DCMAKE_CXX_FLAGS="-stdlib=libc++ -I/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/include" \
-		-DCMAKE_INSTALL_PREFIX="$(SOURCE_PATH)/opt/rocm-$(UPSTREAM_VERSION)" \
+		-DCMAKE_CXX_FLAGS="-I/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/include" \
+		-DCMAKE_INSTALL_PREFIX="$(SOURCE_PATH)/debian/rocm-llvm-extra/opt/rocm-$(UPSTREAM_VERSION)" \
 		-DCMAKE_LINKER_TYPE=LLD \
-		-DCMAKE_FIND_ROOT_PATH=/opt/rocm-$(UPSTREAM_VERSION)/ 
+		-DCMAKE_FIND_ROOT_PATH=/opt/rocm-$(UPSTREAM_VERSION)/ \
+		-DCMAKE_PREFIX_PATH=/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/
 	cd ..
 
 	cd comgr
-	CC=clang CXX=clang++ cmake -S $(COMGR_DIR) -G Ninja \
+	CC=clang CXX=clang++ cmake -B$(SOURCE_PATH)/build_/comgr -S $(COMGR_DIR) -G Ninja \
 		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \
-		-DCMAKE_CXX_FLAGS="-stdlib=libc++ -I/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/include" \
-		-DCMAKE_INSTALL_PREFIX="$(SOURCE_PATH)/opt/rocm-$(UPSTREAM_VERSION)" \
-		-DAMDDeviceLibs_DIR=$$PWD/../device-libs/lib64/cmake/AMDDeviceLibs/ \
+		-DCMAKE_CXX_FLAGS="-I/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/include" \
+		-DCMAKE_INSTALL_PREFIX="$(SOURCE_PATH)/debian/rocm-llvm-extra/opt/rocm-$(UPSTREAM_VERSION)" \
+		-DAMDDeviceLibs_DIR=$(SOURCE_PATH)/build_/device-libs/lib/cmake/AMDDeviceLibs/ \
 		-DCMAKE_LINKER_TYPE=LLD \
-		-DCMAKE_FIND_ROOT_PATH=/opt/rocm-$(UPSTREAM_VERSION)/ 
+		-DCMAKE_FIND_ROOT_PATH=/opt/rocm-$(UPSTREAM_VERSION)/ \
+		-DCMAKE_PREFIX_PATH=/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/
 	cd ..
 
 	cd hipcc
-	CC=clang CXX=clang++ cmake -S $(HIPCC_DIR) -G Ninja \
+	CC=clang CXX=clang++ cmake -B$(SOURCE_PATH)/build_/hipcc -S $(HIPCC_DIR) -G Ninja \
 		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \
-		-DCMAKE_CXX_FLAGS="-stdlib=libc++ -I/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/include" \
-		-DCMAKE_INSTALL_PREFIX="$(SOURCE_PATH)/opt/rocm-$(UPSTREAM_VERSION)" \
+		-DCMAKE_CXX_FLAGS="-I/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/include" \
+		-DCMAKE_INSTALL_PREFIX="$(SOURCE_PATH)/debian/rocm-llvm-extra/opt/rocm-$(UPSTREAM_VERSION)" \
 		-DCMAKE_LINKER_TYPE=LLD \
-		-DCMAKE_FIND_ROOT_PATH=/opt/rocm-$(UPSTREAM_VERSION)/ 
+		-DCMAKE_FIND_ROOT_PATH=/opt/rocm-$(UPSTREAM_VERSION)/ \
+		-DCMAKE_PREFIX_PATH=/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/
 	cd ..
 
 override_dh_auto_build:
 	for dir in device-libs comgr hipcc; do \
-		cd $$dir; \
-		ninja; \
-		cd ..; \
+		cmake --build $(SOURCE_PATH)/build_/$$dir --parallel $(shell nproc); \
 	done
 
 override_dh_auto_install:
 	for dir in device-libs comgr hipcc; do \
-		cd $$dir; \
-		cmake --install . --prefix $(SOURCE_PATH)/opt/rocm-$(UPSTREAM_VERSION) \
-		cd ..; \
+		cmake --install $(SOURCE_PATH)/build_/$$dir --prefix $(SOURCE_PATH)/debian/rocm-llvm-extra/opt/rocm-$(UPSTREAM_VERSION); \
 	done
+
+override_dh_auto_clean:
+	rm -rf $(SOURCE_PATH)/build_
+	dh_auto_clean
 
 override_dh_auto_test:
 	:
