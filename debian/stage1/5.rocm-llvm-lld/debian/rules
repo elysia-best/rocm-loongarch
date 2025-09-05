@@ -39,6 +39,7 @@ override_dh_auto_configure: debian/postinst debian/prerm
 		-DLLVM_DEFAULT_TARGET_TRIPLE="$(DEB_BUILD_GNU_TYPE)" \
 		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib64" \
 		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib64" \
+		-DCMAKE_EXE_LINKER_FLAGS="-L/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib -L/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib64" \
 		-DPROJECT_VERSION_MAJOR=$(MAJOR) \
 		-DPROJECT_VERSION_MINOR=$(MINOR) \
 		-DPROJECT_VERSION_PATCH=$(PATCH) \
