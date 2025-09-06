@@ -10,8 +10,11 @@ DEVICE_LIBS_DIR = $(realpath amd/device-libs)
 COMGR_DIR = $(realpath amd/comgr)
 HIPCC_DIR = $(realpath amd/hipcc)
 
+CC = /opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/bin/clang
+CXX = /opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/bin/clang++
+
 %:
-	CC=clang CXX=clang++ dh $@
+	CC=$(CC) CXX=$(CXX) dh $@
 
 override_dh_auto_configure:
 	mkdir -p $(SOURCE_PATH)/build_
@@ -19,22 +22,22 @@ override_dh_auto_configure:
 	mkdir $(SOURCE_PATH)/build_/comgr
 	mkdir $(SOURCE_PATH)/build_/hipcc
 
-	CC=clang CXX=clang++ cmake -B$(SOURCE_PATH)/build_/device-libs -S$(DEVICE_LIBS_DIR)  -G Ninja \
+	CC=$(CC) CXX=$(CXX) cmake -B$(SOURCE_PATH)/build_/device-libs -S$(DEVICE_LIBS_DIR)  -G Ninja \
 		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
-		-DCMAKE_C_COMPILER=clang \
-		-DCMAKE_CXX_COMPILER=clang++ \
+		-DCMAKE_C_COMPILER=$(CC) \
+		-DCMAKE_CXX_COMPILER=$(CXX) \
 		-DCMAKE_CXX_FLAGS="-I/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/include" \
 		-DCMAKE_INSTALL_PREFIX="$(SOURCE_PATH)/debian/rocm-llvm-extra/opt/rocm-$(UPSTREAM_VERSION)" \
 		-DCMAKE_LINKER_TYPE=LLD \
 		-DCMAKE_FIND_ROOT_PATH=/opt/rocm-$(UPSTREAM_VERSION)/ \
 		-DCMAKE_PREFIX_PATH=/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/
 
-	CC=clang CXX=clang++ cmake -B$(SOURCE_PATH)/build_/comgr -S $(COMGR_DIR) -G Ninja \
+	CC=$(CC) CXX=$(CXX) cmake -B$(SOURCE_PATH)/build_/comgr -S $(COMGR_DIR) -G Ninja \
 		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
-		-DCMAKE_C_COMPILER=clang \
-		-DCMAKE_CXX_COMPILER=clang++ \
+		-DCMAKE_C_COMPILER=$(CC) \
+		-DCMAKE_CXX_COMPILER=$(CXX) \
 		-DCMAKE_CXX_FLAGS="-I/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/include" \
 		-DCMAKE_INSTALL_PREFIX="$(SOURCE_PATH)/debian/rocm-llvm-extra/opt/rocm-$(UPSTREAM_VERSION)" \
 		-DAMDDeviceLibs_DIR=$(SOURCE_PATH)/build_/device-libs/lib/cmake/AMDDeviceLibs/ \
@@ -42,11 +45,11 @@ override_dh_auto_configure:
 		-DCMAKE_FIND_ROOT_PATH=/opt/rocm-$(UPSTREAM_VERSION)/ \
 		-DCMAKE_PREFIX_PATH=/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/
 
-	CC=clang CXX=clang++ cmake -B$(SOURCE_PATH)/build_/hipcc -S $(HIPCC_DIR) -G Ninja \
+	CC=$(CC) CXX=$(CXX) cmake -B$(SOURCE_PATH)/build_/hipcc -S $(HIPCC_DIR) -G Ninja \
 		-DCMAKE_BUILD_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
 		-DCMAKE_INSTALL_RPATH="/opt/rocm-$(UPSTREAM_VERSION)/lib;/opt/rocm-$(UPSTREAM_VERSION)/lib64;/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/lib" \
-		-DCMAKE_C_COMPILER=clang \
-		-DCMAKE_CXX_COMPILER=clang++ \
+		-DCMAKE_C_COMPILER=$(CC) \
+		-DCMAKE_CXX_COMPILER=$(CXX) \
 		-DCMAKE_CXX_FLAGS="-I/opt/rocm-$(UPSTREAM_VERSION)/lib/llvm/include" \
 		-DCMAKE_INSTALL_PREFIX="$(SOURCE_PATH)/debian/rocm-llvm-extra/opt/rocm-$(UPSTREAM_VERSION)" \
 		-DCMAKE_LINKER_TYPE=LLD \
