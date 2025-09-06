@@ -1,0 +1,2 @@
+mkdir -p "/opt/rocm-%PKG_FULL_VERSION%/bin"
+ln -s "../lib/llvm/bin/lld" "/opt/rocm-%PKG_FULL_VERSION%/bin/amdlld"

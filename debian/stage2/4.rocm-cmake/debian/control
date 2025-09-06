@@ -1,0 +1,18 @@
+Source: rocm-cmake
+Section: devel
+Homepage: https://github.com/ROCm/rocm-cmake
+Priority: optional
+Standards-Version: 4.7.2
+Vcs-Git: https://github.com/loongarch-moe/rocm-loongarch.git
+Vcs-Browser: https://github.com/loongarch-moe/rocm-loongarch
+Maintainer: Elysia <elysia-best@simplelinux.cn.eu.org>
+Build-Depends: debhelper-compat (= 13), cmake, clang, ninja-build, libedit-dev, rocm-core, rocm-llvm-core, rocm-llvm-clang, python3
+Rules-Requires-Root: no
+
+Package: rocm-cmake
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}
+Recommends: gcc, g++, cmake
+Multi-Arch: foreign
+Description: CMake modules used within the ROCm libraries
+ CMake modules used within the ROCm libraries
