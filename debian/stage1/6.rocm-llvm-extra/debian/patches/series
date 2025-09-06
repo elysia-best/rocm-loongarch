@@ -1,1 +1,2 @@
 000-loongarch.patch
+001-fix_comgr_rocm_device_dir.patch
